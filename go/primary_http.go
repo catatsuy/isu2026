@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -254,7 +255,7 @@ func AsiaRoutingMiddleware(h *HandlerContext) echo.MiddlewareFunc {
 				c.Set("primary_request_nonce", nonce)
 				return next(c)
 			}
-			if h.PrimaryAPI != nil && strings.HasPrefix(req.URL.Path, "/api/") {
+			if h.PrimaryAPI != nil && strings.HasPrefix(req.URL.Path, "/api/") && !localImageUpload(c) {
 				return h.PrimaryAPI.forward(c)
 			}
 			return next(c)
@@ -271,6 +272,9 @@ func forwardedRegion(c *echo.Context, config *Config) string {
 
 func (p *primaryAPIClient) call(ctx context.Context, auth, ip string, input primaryRPCRequest, output any) error {
 	body, err := json.Marshal(input)
+	if input.Op == "image_upload" {
+		log.Printf("image_upload phase=rpc region=%s bytes=%d", p.region, len(body))
+	}
 	if err != nil {
 		return err
 	}

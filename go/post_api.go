@@ -1,10 +1,8 @@
 package isureal
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
-	"image/jpeg"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -14,13 +12,13 @@ import (
 )
 
 type createPostRequest struct {
-	Image        *multipart.FileHeader `form:"image"`
-	Caption      string                `form:"caption"`
-	Visibility   string                `form:"visibility"`
-	LocationKind string                `form:"location_kind"`
-	Latitude     *float64              `form:"latitude"`
-	Longitude    *float64              `form:"longitude"`
-	Locality     *string               `form:"locality"`
+	Image        *multipart.FileHeader `form:"image" json:"-"`
+	Caption      string                `form:"caption" json:"caption"`
+	Visibility   string                `form:"visibility" json:"visibility"`
+	LocationKind string                `form:"location_kind" json:"locationKind"`
+	Latitude     *float64              `form:"latitude" json:"latitude"`
+	Longitude    *float64              `form:"longitude" json:"longitude"`
+	Locality     *string               `form:"locality" json:"locality"`
 }
 
 type postAuthorResponse struct {
@@ -75,94 +73,100 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		img, err := jpeg.Decode(bytes.NewReader(imageData))
-		if err != nil {
-			return NewAPIError(http.StatusBadRequest, "invalid_post")
-		}
-		if img.Bounds().Dx() > 4096 || img.Bounds().Dy() > 4096 {
-			return NewAPIError(http.StatusBadRequest, "invalid_post")
+		if err := decodeUploadJPEG(c, imageData, 4096, "invalid_post"); err != nil {
+			return err
 		}
 
 		ctx := c.Request().Context()
-		userID := GetSession(c).UserID
-		// Persist immutable bytes and a durable replica before taking DB locks.
+		// Persist immutable bytes and durable replication intent before taking DB locks.
 		// Failed transactions may leave unreferenced files, which are never public.
 		imageID := uuid.NewString()
 		if err := h.ImageFiles.Save(ctx, imageID, imageData); err != nil {
 			return err
 		}
-		tx, err := h.WriteDB().BeginTxx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-		var lockedUserID string
-		if err := tx.GetContext(ctx, &lockedUserID, `SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE`, userID); err != nil {
-			return err
-		}
-		user, err := getUser(ctx, tx, userID)
-		if err != nil {
-			return err
-		}
-		var window struct {
-			ID             string    `db:"id"`
-			LocalDate      time.Time `db:"local_date"`
-			StartsAt       time.Time `db:"starts_at"`
-			OnTimeDeadline time.Time `db:"on_time_deadline"`
-		}
-		// Concurrent authors may share this lock; ending the window must wait
-		// for their commits. The user lock still serializes slot/count changes.
+		return h.finishImageUpload(c, primaryImageUpload{Kind: "post", ImageID: imageID, Post: &input})
+	}
+}
+
+func (h *HandlerContext) commitPost(c *echo.Context, input createPostRequest, imageID string) (createPostResponse, error) {
+	ctx := c.Request().Context()
+	userID := GetSession(c).UserID
+	location := PostLocation{Kind: input.LocationKind, Latitude: input.Latitude, Longitude: input.Longitude, Locality: input.Locality}
+
+	tx, err := h.WriteDB().BeginTxx(ctx, nil)
+	if err != nil {
+		return createPostResponse{}, err
+	}
+	defer tx.Rollback()
+	var lockedUserID string
+	if err := tx.GetContext(ctx, &lockedUserID, `SELECT id FROM users WHERE id = $1 FOR NO KEY UPDATE`, userID); err != nil {
+		return createPostResponse{}, err
+	}
+	if err := recheckUploadSession(c, tx); err != nil {
+		return createPostResponse{}, err
+	}
+	user, err := getUser(ctx, tx, userID)
+	if err != nil {
+		return createPostResponse{}, err
+	}
+	var window struct {
+		ID             string    `db:"id"`
+		LocalDate      time.Time `db:"local_date"`
+		StartsAt       time.Time `db:"starts_at"`
+		OnTimeDeadline time.Time `db:"on_time_deadline"`
+	}
+	// Concurrent authors may share this lock; ending the window must wait
+	// for their commits. The user lock still serializes slot/count changes.
+	err = tx.GetContext(ctx, &window, activePostingWindowQuery, user.Region)
+	if errors.Is(err, sql.ErrNoRows) {
 		err = tx.GetContext(ctx, &window, activePostingWindowQuery, user.Region)
+	}
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			err = tx.GetContext(ctx, &window, activePostingWindowQuery, user.Region)
+			return createPostResponse{}, NewAPIError(http.StatusConflict, "post_slot_unavailable")
 		}
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return NewAPIError(http.StatusConflict, "post_slot_unavailable")
-			}
-			return err
-		}
-		var counts struct {
-			Active  int `db:"active"`
-			Deleted int `db:"deleted"`
-		}
-		if err := tx.GetContext(ctx, &counts, `
+		return createPostResponse{}, err
+	}
+	var counts struct {
+		Active  int `db:"active"`
+		Deleted int `db:"deleted"`
+	}
+	if err := tx.GetContext(ctx, &counts, `
    SELECT count(*) FILTER (WHERE deleted_at IS NULL) AS active,
           count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted
    FROM posts p JOIN posting_windows w ON w.id = p.posting_window_id
    WHERE p.author_id = $1 AND w.local_date = $2
   `, userID, window.LocalDate); err != nil {
-			return err
-		}
-		postedAt := time.Now().UTC()
-		if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
-			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
-		}
-		// Match pgx timestamptz binary encoding (microsecond truncation) and
-		// its default scan location, so the response matches a DB round trip.
-		postedAt = postedAt.Truncate(time.Microsecond).In(time.Local)
-		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, nil, postedAt); err != nil {
-			return err
-		}
-		postID := uuid.NewString()
-		if _, err := tx.ExecContext(ctx, `
+		return createPostResponse{}, err
+	}
+	postedAt := time.Now().UTC()
+	if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
+		return createPostResponse{}, NewAPIError(http.StatusConflict, "post_slot_unavailable")
+	}
+	// Match pgx timestamptz binary encoding (microsecond truncation) and
+	// its default scan location, so the response matches a DB round trip.
+	postedAt = postedAt.Truncate(time.Microsecond).In(time.Local)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, nil, postedAt); err != nil {
+		return createPostResponse{}, err
+	}
+	postID := uuid.NewString()
+	if _, err := tx.ExecContext(ctx, `
    INSERT INTO posts (id, author_id, posting_window_id, image_id, caption, visibility,
                       location_kind, latitude, longitude, locality, posted_at)
    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
   `, postID, userID, window.ID, imageID, input.Caption, input.Visibility,
-			location.Kind, location.Latitude, location.Longitude, location.Locality, postedAt); err != nil {
-			return err
-		}
-		post := Post{
-			ID: postID, AuthorID: userID, PostingWindowID: window.ID,
-			ImageID: imageID, Caption: input.Caption, Visibility: input.Visibility,
-			PostLocation: location, PostedAt: postedAt, OnTimeDeadline: window.OnTimeDeadline,
-		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return c.JSON(http.StatusCreated, newPostResponse(post, user))
+		location.Kind, location.Latitude, location.Longitude, location.Locality, postedAt); err != nil {
+		return createPostResponse{}, err
 	}
+	post := Post{
+		ID: postID, AuthorID: userID, PostingWindowID: window.ID,
+		ImageID: imageID, Caption: input.Caption, Visibility: input.Visibility,
+		PostLocation: location, PostedAt: postedAt, OnTimeDeadline: window.OnTimeDeadline,
+	}
+	if err := tx.Commit(); err != nil {
+		return createPostResponse{}, err
+	}
+	return newPostResponse(post, user), nil
 }
 
 func newPostResponse(post Post, user User) createPostResponse {

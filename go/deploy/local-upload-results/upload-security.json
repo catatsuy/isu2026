@@ -1,0 +1,17 @@
+{
+  "passed": [
+    "asia: post and immediate image GET on all regions",
+    "asia: profile replacement immediately revokes old image",
+    "asia: malformed and unauthenticated uploads rejected",
+    "europe: post and immediate image GET on all regions",
+    "europe: profile replacement immediately revokes old image",
+    "europe: malformed and unauthenticated uploads rejected",
+    "america: post and immediate image GET on all regions",
+    "america: profile replacement immediately revokes old image",
+    "america: malformed and unauthenticated uploads rejected",
+    "europe: RealMoji replacement and block authorization",
+    "america: RealMoji replacement and block authorization",
+    "deleted post image and new RealMoji immediately denied"
+  ],
+  "errors": []
+}

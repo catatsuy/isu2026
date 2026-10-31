@@ -277,7 +277,11 @@ func WriteDeadlineMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if req.Method == http.MethodGet || req.Method == http.MethodHead || c.Path() == "/api/initialize" || c.Path() == "/internal/image-files/:imageId" {
 			return next(c)
 		}
-		ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
+		timeout := 10 * time.Second
+		if localImageUpload(c) {
+			timeout = 30 * time.Second
+		}
+		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 		c.SetRequest(req.WithContext(ctx))
 		err := next(c)

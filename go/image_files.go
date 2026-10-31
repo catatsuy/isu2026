@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,6 +33,8 @@ type ImageFileStore struct {
 	token             []byte
 	client            *http.Client
 	fills             singleflight.Group
+	ensureFallback    atomic.Uint64
+	ensureFailures    atomic.Uint64
 	replicationOnce   sync.Once
 	replicationCancel context.CancelFunc
 	replicationWG     sync.WaitGroup
@@ -242,9 +246,11 @@ func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error
 	if err := s.startReplication(); err != nil {
 		return err
 	}
+	started := time.Now()
 	if err := WriteImageFile(s.Root, id, data, true); err != nil {
 		return err
 	}
+	localTime := time.Since(started)
 	// Persist the queue entry before success (and before callers commit DB metadata).
 	// A crash before this point may leave an unreferenced local image, but cannot
 	// lose replication work for an acknowledged Save.
@@ -255,6 +261,7 @@ func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error
 	if err != nil {
 		return err
 	}
+	log.Printf("image_upload phase=save image_id=%s bytes=%d local_fsync_us=%d job_fsync_us=%d", id, len(data), localTime.Microseconds(), (time.Since(started) - localTime).Microseconds())
 	s.markReplicationShard(ImageFilePath(s.jobRoot(), id))
 	return nil
 }
@@ -267,31 +274,57 @@ func (s *ImageFileStore) Ensure(ctx context.Context, id string) (string, error) 
 		return "/_internal/image-files/" + key[:2] + "/" + key, nil
 	}
 	result := s.fills.DoChan(id, func() (any, error) {
-		for _, peer := range s.Peers {
-			response, err := s.peerRequest(ctx, peer, http.MethodGet, id, nil)
-			if err != nil {
-				continue
-			}
-			if response.StatusCode != http.StatusOK {
-				response.Body.Close()
-				continue
-			}
-			data, err := io.ReadAll(io.LimitReader(response.Body, maxImageFileSize+1))
-			response.Body.Close()
-			if err != nil || len(data) > maxImageFileSize {
-				continue
-			}
-			digest := fmt.Sprintf("%x", sha256.Sum256(data))
-			got, err := hex.DecodeString(response.Header.Get("X-Image-Signature"))
-			want, _ := hex.DecodeString(s.signature("RESPONSE", id, response.Request.Header.Get("X-Image-Time"), digest))
-			if err != nil || !hmac.Equal(got, want) {
-				continue
-			}
-			if err := WriteImageFile(s.Root, id, data, true); err != nil {
-				return nil, err
-			}
+		// A cancelled first caller must not poison concurrent waiters. Bound the shared
+		// fill independently, and cancel losing peer GETs as soon as a valid copy wins.
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		if info, err := os.Stat(name); err == nil && info.Mode().IsRegular() {
 			return nil, nil
 		}
+		s.ensureFallback.Add(1)
+		copies := make(chan []byte, len(s.Peers))
+		for _, peer := range s.Peers {
+			go func(peer string) {
+				var verified []byte
+				defer func() { copies <- verified }()
+				response, err := s.peerRequest(ctx, peer, http.MethodGet, id, nil)
+				if err != nil {
+					return
+				}
+				defer response.Body.Close()
+				if response.StatusCode != http.StatusOK {
+					return
+				}
+				data, err := io.ReadAll(io.LimitReader(response.Body, maxImageFileSize+1))
+				if err != nil || len(data) > maxImageFileSize {
+					return
+				}
+				digest := fmt.Sprintf("%x", sha256.Sum256(data))
+				got, err := hex.DecodeString(response.Header.Get("X-Image-Signature"))
+				want, _ := hex.DecodeString(s.signature("RESPONSE", id, response.Request.Header.Get("X-Image-Time"), digest))
+				if err != nil || !hmac.Equal(got, want) {
+					return
+				}
+				verified = data
+			}(peer)
+		}
+		for range s.Peers {
+			select {
+			case <-ctx.Done():
+				s.ensureFailures.Add(1)
+				return nil, ctx.Err()
+			case data := <-copies:
+				if data == nil {
+					continue
+				}
+				if err := WriteImageFile(s.Root, id, data, true); err != nil {
+					s.ensureFailures.Add(1)
+					return nil, err
+				}
+				return nil, nil
+			}
+		}
+		s.ensureFailures.Add(1)
 		return nil, errors.New("image file unavailable on all replicas")
 	})
 	select {

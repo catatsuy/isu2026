@@ -15,16 +15,17 @@ import (
 )
 
 type primaryRPCRequest struct {
-	Op          string   `json:"op"`
-	Route       string   `json:"route,omitempty"`
-	NeedSession bool     `json:"need_session,omitempty"`
-	NeedViewer  bool     `json:"need_viewer,omitempty"`
-	ID          string   `json:"id,omitempty"`
-	IDs         []string `json:"ids,omitempty"`
-	Feed        string   `json:"feed,omitempty"`
-	CommentIDs  []string `json:"comment_ids,omitempty"`
-	ReactionIDs []string `json:"reaction_ids,omitempty"`
-	ReplicaName string   `json:"replica_name,omitempty"`
+	Op          string              `json:"op"`
+	Upload      *primaryImageUpload `json:"upload,omitempty"`
+	Route       string              `json:"route,omitempty"`
+	NeedSession bool                `json:"need_session,omitempty"`
+	NeedViewer  bool                `json:"need_viewer,omitempty"`
+	ID          string              `json:"id,omitempty"`
+	IDs         []string            `json:"ids,omitempty"`
+	Feed        string              `json:"feed,omitempty"`
+	CommentIDs  []string            `json:"comment_ids,omitempty"`
+	ReactionIDs []string            `json:"reaction_ids,omitempty"`
+	ReplicaName string              `json:"replica_name,omitempty"`
 }
 type primaryRPCResult struct {
 	Data   json.RawMessage `json:"data,omitempty"`
@@ -169,9 +170,9 @@ func (h *HandlerContext) primaryRPCExecute(c *echo.Context, input primaryRPCRequ
 		stats := h.WriteDB().Stats()
 		var memory runtime.MemStats
 		runtime.ReadMemStats(&memory)
-		return map[string]any{"db_open": stats.OpenConnections, "db_in_use": stats.InUse, "db_wait_count": stats.WaitCount, "db_wait_ms": stats.WaitDuration.Milliseconds(), "goroutines": runtime.NumGoroutine(), "heap_mib": memory.HeapAlloc >> 20}, nil
+		return map[string]any{"image_ensure_fallback": h.ImageFiles.ensureFallback.Load(), "image_ensure_failures": h.ImageFiles.ensureFailures.Load(), "db_open": stats.OpenConnections, "db_in_use": stats.InUse, "db_wait_count": stats.WaitCount, "db_wait_ms": stats.WaitDuration.Milliseconds(), "goroutines": runtime.NumGoroutine(), "heap_mib": memory.HeapAlloc >> 20}, nil
 	}
-	if input.Op == "ready" {
+	if input.Op == "ready" || input.Op == "upload_ready" {
 		return true, h.WriteDB().PingContext(ctx)
 	}
 	if input.Op == "replica_health" {
@@ -184,6 +185,10 @@ func (h *HandlerContext) primaryRPCExecute(c *echo.Context, input primaryRPCRequ
 		}
 		return primaryReplicaIdentity(ctx, h.WriteDB(), input.ReplicaName)
 	}
+	if input.Op == "image_upload" && (!trustedUploadRPC(c) || input.Upload == nil) {
+		return nil, NewAPIError(403, "primary_api_forbidden")
+	}
+
 	required := input.Op != "image_auth" && (input.Op != "read_auth" || input.NeedSession)
 	if err := h.authenticatePrimaryRPC(c, required); err != nil {
 		return nil, err
@@ -191,6 +196,13 @@ func (h *HandlerContext) primaryRPCExecute(c *echo.Context, input primaryRPCRequ
 	if required && input.Op != "read_auth" && GetSession(c) == nil {
 		return nil, NewAPIError(401, "invalid_session")
 	}
+	if input.Op == "image_upload" {
+		if err := input.Upload.validate(); err != nil {
+			return nil, err
+		}
+		return h.commitImageUpload(c, *input.Upload)
+	}
+
 	if input.Op == "read_auth" {
 		result := primaryReadAuthorization{Session: GetSession(c)}
 		if result.Session != nil {

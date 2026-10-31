@@ -1,0 +1,486 @@
+2026/10/31 07:24:54 image_upload phase=preauth route=/api/posts duration_us=102960
+2026/10/31 07:24:54 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87836
+2026/10/31 07:24:54 image_upload phase=save image_id=d9b4f36e-8cf4-430d-a233-b4691cf7b700 bytes=3759501 local_fsync_us=12810 job_fsync_us=5353
+2026/10/31 07:24:54 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:24:54 image_upload phase=metadata kind=post image_id=d9b4f36e-8cf4-430d-a233-b4691cf7b700 duration_us=117339
+2026/10/31 07:24:56 image_upload phase=replicated job=560a7cd7f84560693dd98e6177d59c85fa3bde24aa594dc6b98ad8bbb9b8b2fd duration_us=1892948
+2026/10/31 07:24:59 image_upload phase=preauth route=/api/posts duration_us=102883
+2026/10/31 07:24:59 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87302
+2026/10/31 07:24:59 image_upload phase=save image_id=e94d81ab-0fce-4583-b7ee-fda5cc3c1468 bytes=3759501 local_fsync_us=12216 job_fsync_us=5733
+2026/10/31 07:24:59 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:24:59 image_upload phase=metadata kind=post image_id=e94d81ab-0fce-4583-b7ee-fda5cc3c1468 duration_us=116446
+2026/10/31 07:25:00 image_upload phase=replicated job=aa88294d1d6e6a8af3328401e19b2109d4c9eb7ced485e03a70fc7b6245182e3 duration_us=1337356
+2026/10/31 07:25:02 image_upload phase=preauth route=/api/me/profile-image duration_us=103105
+2026/10/31 07:25:02 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5588
+2026/10/31 07:25:02 image_upload phase=save image_id=bac7e3da-d819-433f-bfde-afbb4553d060 bytes=235755 local_fsync_us=8073 job_fsync_us=6370
+2026/10/31 07:25:02 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:02 image_upload phase=metadata kind=profile image_id=bac7e3da-d819-433f-bfde-afbb4553d060 duration_us=111366
+2026/10/31 07:25:02 image_upload phase=replicated job=1cffcf24663ee0d65351e2a050cbe4914cd45585ef8d59aae4465304991bc644 duration_us=442709
+2026/10/31 07:25:03 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109354
+2026/10/31 07:25:03 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5450
+2026/10/31 07:25:03 image_upload phase=save image_id=f1388657-f402-4849-9754-61e45d4b2045 bytes=235755 local_fsync_us=9113 job_fsync_us=6665
+2026/10/31 07:25:03 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:04 image_upload phase=metadata kind=realmoji image_id=f1388657-f402-4849-9754-61e45d4b2045 duration_us=128199
+2026/10/31 07:25:04 image_upload phase=replicated job=a114c9e13798b83c098a78862613ace0ddff07a35a88cc968c607fe690c0de25 duration_us=439807
+2026/10/31 07:25:05 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108580
+2026/10/31 07:25:05 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5521
+2026/10/31 07:25:05 image_upload phase=save image_id=5d034d19-633e-4606-9fbb-75392f230804 bytes=235755 local_fsync_us=7046 job_fsync_us=4193
+2026/10/31 07:25:05 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:05 image_upload phase=metadata kind=realmoji image_id=5d034d19-633e-4606-9fbb-75392f230804 duration_us=128174
+2026/10/31 07:25:05 image_upload phase=replicated job=1c93d9e763f10e38080472776436ab52ec948e14bbb8614ca3d8e597c24c38ed duration_us=436091
+2026/10/31 07:25:06 image_upload phase=preauth route=/api/posts duration_us=102487
+2026/10/31 07:25:06 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87247
+2026/10/31 07:25:07 image_upload phase=save image_id=a1e9e73c-0f31-48ae-8f3b-235a962092c1 bytes=3759501 local_fsync_us=12554 job_fsync_us=5832
+2026/10/31 07:25:07 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:07 image_upload phase=metadata kind=post image_id=a1e9e73c-0f31-48ae-8f3b-235a962092c1 duration_us=118150
+2026/10/31 07:25:08 image_upload phase=replicated job=c5a6fc9b06c6bd22c90338daa7ca9dfeebf9fdda1c1694a70ae784e5b5524ceb duration_us=1345356
+2026/10/31 07:25:10 image_upload phase=preauth route=/api/me/profile-image duration_us=103316
+2026/10/31 07:25:10 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5665
+2026/10/31 07:25:10 image_upload phase=save image_id=60c34eac-c0e0-4cf9-949b-deccf1849f58 bytes=235755 local_fsync_us=12152 job_fsync_us=8649
+2026/10/31 07:25:10 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:10 image_upload phase=metadata kind=profile image_id=60c34eac-c0e0-4cf9-949b-deccf1849f58 duration_us=112125
+2026/10/31 07:25:10 image_upload phase=replicated job=5a7a280312c1349dbc6c738877ccd6fd5299962fa49404891b6ca39944b3c761 duration_us=440755
+2026/10/31 07:25:11 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=110769
+2026/10/31 07:25:11 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5569
+2026/10/31 07:25:11 image_upload phase=save image_id=844086ef-fca9-444c-94d1-00b8cdecd877 bytes=235755 local_fsync_us=8892 job_fsync_us=8191
+2026/10/31 07:25:11 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:11 image_upload phase=metadata kind=realmoji image_id=844086ef-fca9-444c-94d1-00b8cdecd877 duration_us=124915
+2026/10/31 07:25:12 image_upload phase=replicated job=1988372010568b67c667ad441a0d44cfbe61a35b060e058ad8f6700e8fd01fdc duration_us=434863
+2026/10/31 07:25:13 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109223
+2026/10/31 07:25:13 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5621
+2026/10/31 07:25:13 image_upload phase=save image_id=9959f73a-6a42-49b4-970d-6310c9878634 bytes=235755 local_fsync_us=8335 job_fsync_us=6835
+2026/10/31 07:25:13 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:13 image_upload phase=metadata kind=realmoji image_id=9959f73a-6a42-49b4-970d-6310c9878634 duration_us=125511
+2026/10/31 07:25:13 image_upload phase=replicated job=d9e50f6c181536e645ab8d605a93e22d1bf4308973ef3c2c3608f833c5ba9e85 duration_us=435215
+2026/10/31 07:25:14 image_upload phase=preauth route=/api/posts duration_us=102815
+2026/10/31 07:25:14 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87982
+2026/10/31 07:25:15 image_upload phase=save image_id=587ef7e8-550e-4867-b94a-2583ac08ffba bytes=3759501 local_fsync_us=12645 job_fsync_us=5473
+2026/10/31 07:25:15 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:15 image_upload phase=metadata kind=post image_id=587ef7e8-550e-4867-b94a-2583ac08ffba duration_us=116653
+2026/10/31 07:25:16 image_upload phase=replicated job=7231fb34e83be3994a69db71392e7ed044661d81f81f0c1a3a32463223c24fc2 duration_us=1338621
+2026/10/31 07:25:18 image_upload phase=preauth route=/api/me/profile-image duration_us=103060
+2026/10/31 07:25:18 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5554
+2026/10/31 07:25:18 image_upload phase=save image_id=decf9281-fe0d-43a9-bcc9-a04ed00aa486 bytes=235755 local_fsync_us=8942 job_fsync_us=6219
+2026/10/31 07:25:18 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:18 image_upload phase=metadata kind=profile image_id=decf9281-fe0d-43a9-bcc9-a04ed00aa486 duration_us=120498
+2026/10/31 07:25:18 image_upload phase=replicated job=fa1627ffb02e37ef7fad8d20ebe5d43b2bb9802864500be6a3b68c4d8a915110 duration_us=446013
+2026/10/31 07:25:19 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109132
+2026/10/31 07:25:19 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5585
+2026/10/31 07:25:19 image_upload phase=save image_id=7460d813-7930-4a10-bcbe-b7a0f189c508 bytes=235755 local_fsync_us=8444 job_fsync_us=6237
+2026/10/31 07:25:19 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:19 image_upload phase=metadata kind=realmoji image_id=7460d813-7930-4a10-bcbe-b7a0f189c508 duration_us=128920
+2026/10/31 07:25:20 image_upload phase=replicated job=4561554bd63e70e1eaa854124b587409828ce1aa1ff57d1902ba228da39d8658 duration_us=440055
+2026/10/31 07:25:21 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109097
+2026/10/31 07:25:21 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5592
+2026/10/31 07:25:21 image_upload phase=save image_id=9e299fd2-5d97-49b7-81f4-fa1a5f00a0b7 bytes=235755 local_fsync_us=7599 job_fsync_us=4206
+2026/10/31 07:25:21 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:21 image_upload phase=metadata kind=realmoji image_id=9e299fd2-5d97-49b7-81f4-fa1a5f00a0b7 duration_us=125250
+2026/10/31 07:25:21 image_upload phase=replicated job=56a050fa67b24c646f9947e6b4d70c33dc3c59e20d0729f8b477793ed5292822 duration_us=435697
+2026/10/31 07:25:22 image_upload phase=preauth route=/api/posts duration_us=102575
+2026/10/31 07:25:22 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87585
+2026/10/31 07:25:22 image_upload phase=save image_id=e733f7bb-7901-451c-9a1d-e8305020c5fa bytes=3759501 local_fsync_us=13580 job_fsync_us=5555
+2026/10/31 07:25:22 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:23 image_upload phase=metadata kind=post image_id=e733f7bb-7901-451c-9a1d-e8305020c5fa duration_us=116816
+2026/10/31 07:25:24 image_upload phase=replicated job=8f7a9d680385d139fb8aaf6eb50ee986e6d55f7cff68d4d1b29e04422567d71c duration_us=1343844
+2026/10/31 07:25:26 image_upload phase=preauth route=/api/me/profile-image duration_us=103008
+2026/10/31 07:25:26 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5575
+2026/10/31 07:25:26 image_upload phase=save image_id=52f6dded-1fda-435a-b55f-c433d8cd23de bytes=235755 local_fsync_us=9505 job_fsync_us=5846
+2026/10/31 07:25:26 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:26 image_upload phase=metadata kind=profile image_id=52f6dded-1fda-435a-b55f-c433d8cd23de duration_us=140470
+2026/10/31 07:25:26 image_upload phase=replicated job=c4f4cb3c07adc9a849bc0c37598071d213a255163cd78235e4ff4fbdbec55d6f duration_us=466860
+2026/10/31 07:25:27 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109413
+2026/10/31 07:25:27 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5691
+2026/10/31 07:25:27 image_upload phase=save image_id=7d83ec2e-2a2e-4379-ad20-05860da1e7a2 bytes=235755 local_fsync_us=9673 job_fsync_us=6341
+2026/10/31 07:25:27 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:27 image_upload phase=metadata kind=realmoji image_id=7d83ec2e-2a2e-4379-ad20-05860da1e7a2 duration_us=125922
+2026/10/31 07:25:28 image_upload phase=replicated job=ca32de78fe9c60fe4c52de23683d113137781eac9d53544fca2194d898365575 duration_us=438526
+2026/10/31 07:25:29 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109582
+2026/10/31 07:25:29 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5481
+2026/10/31 07:25:29 image_upload phase=save image_id=751623cd-b192-4fa3-9dce-a9a605b14717 bytes=235755 local_fsync_us=9939 job_fsync_us=5775
+2026/10/31 07:25:29 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:29 image_upload phase=metadata kind=realmoji image_id=751623cd-b192-4fa3-9dce-a9a605b14717 duration_us=125421
+2026/10/31 07:25:29 image_upload phase=replicated job=dcadc3038f72faeff9138f88fe7e94231b6a24923314a46981af4a0b1d828a6c duration_us=438058
+2026/10/31 07:25:30 image_upload phase=preauth route=/api/posts duration_us=102738
+2026/10/31 07:25:30 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87336
+2026/10/31 07:25:30 image_upload phase=save image_id=71558aad-7a53-481a-9e88-ae2b8f01d5d3 bytes=3759501 local_fsync_us=14426 job_fsync_us=6107
+2026/10/31 07:25:30 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:31 image_upload phase=metadata kind=post image_id=71558aad-7a53-481a-9e88-ae2b8f01d5d3 duration_us=116847
+2026/10/31 07:25:32 image_upload phase=replicated job=c13bab46b48b360c722e12d8ca135c74d3aa2e361383e7ae1ac57635aae522e0 duration_us=1344068
+2026/10/31 07:25:34 image_upload phase=preauth route=/api/me/profile-image duration_us=103039
+2026/10/31 07:25:34 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5574
+2026/10/31 07:25:34 image_upload phase=save image_id=1916b53d-decb-4a92-ba5d-e99539892680 bytes=235755 local_fsync_us=9970 job_fsync_us=6305
+2026/10/31 07:25:34 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:34 image_upload phase=metadata kind=profile image_id=1916b53d-decb-4a92-ba5d-e99539892680 duration_us=127563
+2026/10/31 07:25:34 image_upload phase=replicated job=f7598cffa2a2fb1e63d39e10c1f1c6523dd2bf71b64c47cf5defbd8e056be902 duration_us=450022
+2026/10/31 07:25:35 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109292
+2026/10/31 07:25:35 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6361
+2026/10/31 07:25:35 image_upload phase=save image_id=b4f15c29-bf24-41ab-9736-049073a91b88 bytes=235755 local_fsync_us=8970 job_fsync_us=6879
+2026/10/31 07:25:35 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:35 image_upload phase=metadata kind=realmoji image_id=b4f15c29-bf24-41ab-9736-049073a91b88 duration_us=125638
+2026/10/31 07:25:36 image_upload phase=replicated job=a6efd870f2ba7dcacc4d487fa4e24b60dc9e0be444af37e0a8f9a4da58b3b447 duration_us=435801
+2026/10/31 07:25:37 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109135
+2026/10/31 07:25:37 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5953
+2026/10/31 07:25:37 image_upload phase=save image_id=1c1a3d03-fe4b-4be5-8063-28e682636819 bytes=235755 local_fsync_us=11142 job_fsync_us=7401
+2026/10/31 07:25:37 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:37 image_upload phase=metadata kind=realmoji image_id=1c1a3d03-fe4b-4be5-8063-28e682636819 duration_us=125097
+2026/10/31 07:25:37 image_upload phase=replicated job=bf799758af7d1b8d41389ec26b70d7b51aad1d9e93a57cc7d8601abfc0153171 duration_us=435895
+2026/10/31 07:25:38 image_upload phase=preauth route=/api/posts duration_us=102640
+2026/10/31 07:25:38 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=86782
+2026/10/31 07:25:38 image_upload phase=save image_id=7e2ca117-a296-4164-a995-309ad956df8d bytes=3759501 local_fsync_us=12035 job_fsync_us=5380
+2026/10/31 07:25:38 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:38 image_upload phase=metadata kind=post image_id=7e2ca117-a296-4164-a995-309ad956df8d duration_us=116843
+2026/10/31 07:25:40 image_upload phase=replicated job=bf4683a11d4a0abf164aaf958b11dd3b00846964476f8e9b8a1b075d7489a9b5 duration_us=1351910
+2026/10/31 07:25:42 image_upload phase=preauth route=/api/me/profile-image duration_us=111481
+2026/10/31 07:25:42 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=7032
+2026/10/31 07:25:42 image_upload phase=save image_id=964a2356-16e7-4dfe-aaae-f128c2b68cc3 bytes=235755 local_fsync_us=9097 job_fsync_us=6139
+2026/10/31 07:25:42 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:42 image_upload phase=metadata kind=profile image_id=964a2356-16e7-4dfe-aaae-f128c2b68cc3 duration_us=122701
+2026/10/31 07:25:42 image_upload phase=replicated job=4227c0accadc13d2c4bf4d68a02e5e3dd3c870c864c848c9b333f39b41fa1945 duration_us=445163
+2026/10/31 07:25:43 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109482
+2026/10/31 07:25:43 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5973
+2026/10/31 07:25:43 image_upload phase=save image_id=8f139092-9f58-4a87-8bd4-942568c702c5 bytes=235755 local_fsync_us=10515 job_fsync_us=6188
+2026/10/31 07:25:43 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:43 image_upload phase=metadata kind=realmoji image_id=8f139092-9f58-4a87-8bd4-942568c702c5 duration_us=124906
+2026/10/31 07:25:44 image_upload phase=replicated job=397e15159eec074a6d6d94eabac0eec458d119bd82cdff12aa16a0492c5d2674 duration_us=440004
+2026/10/31 07:25:44 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109305
+2026/10/31 07:25:45 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6093
+2026/10/31 07:25:45 image_upload phase=save image_id=79e9d1bd-f872-4434-8ce0-fea9305fce56 bytes=235755 local_fsync_us=8101 job_fsync_us=6051
+2026/10/31 07:25:45 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:45 image_upload phase=metadata kind=realmoji image_id=79e9d1bd-f872-4434-8ce0-fea9305fce56 duration_us=125623
+2026/10/31 07:25:45 image_upload phase=replicated job=3569d53004a3a4a32504157649fbca687eb9ce725967a59b0eb979ac29ead23f duration_us=440253
+2026/10/31 07:25:46 image_upload phase=preauth route=/api/posts duration_us=102657
+2026/10/31 07:25:46 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87625
+2026/10/31 07:25:46 image_upload phase=save image_id=71f212d7-3a8b-49c5-907f-0599eda72b54 bytes=3759501 local_fsync_us=12595 job_fsync_us=5000
+2026/10/31 07:25:46 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:46 image_upload phase=metadata kind=post image_id=71f212d7-3a8b-49c5-907f-0599eda72b54 duration_us=116260
+2026/10/31 07:25:48 image_upload phase=replicated job=e9178d4d7dfc067c51849a5467fc42701798ee847225f58b876cb2f9852e825f duration_us=1340496
+2026/10/31 07:25:50 image_upload phase=preauth route=/api/me/profile-image duration_us=103104
+2026/10/31 07:25:50 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6933
+2026/10/31 07:25:50 image_upload phase=save image_id=c0c80190-ff16-49c8-a685-24e9f19c0e54 bytes=235755 local_fsync_us=9546 job_fsync_us=5873
+2026/10/31 07:25:50 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:50 image_upload phase=metadata kind=profile image_id=c0c80190-ff16-49c8-a685-24e9f19c0e54 duration_us=111460
+2026/10/31 07:25:50 image_upload phase=replicated job=79ef87f199370c7787de50b4d7e73ddf194cd930d9e7ef950a6502daa5f19c2a duration_us=440091
+2026/10/31 07:25:51 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109390
+2026/10/31 07:25:51 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6208
+2026/10/31 07:25:51 image_upload phase=save image_id=d2284681-ca9a-4852-b2de-b6378fc62511 bytes=235755 local_fsync_us=8891 job_fsync_us=5915
+2026/10/31 07:25:51 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:51 image_upload phase=metadata kind=realmoji image_id=d2284681-ca9a-4852-b2de-b6378fc62511 duration_us=125191
+2026/10/31 07:25:51 image_upload phase=replicated job=9eca898304cce4c4e788e0c8b7af4502415214d61c52ba14259c9b6f6b90865e duration_us=436870
+2026/10/31 07:25:52 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108779
+2026/10/31 07:25:52 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5988
+2026/10/31 07:25:52 image_upload phase=save image_id=e4405a17-9768-4e44-8470-500a9920d40b bytes=235755 local_fsync_us=9795 job_fsync_us=7141
+2026/10/31 07:25:52 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:25:53 image_upload phase=metadata kind=realmoji image_id=e4405a17-9768-4e44-8470-500a9920d40b duration_us=126021
+2026/10/31 07:25:53 image_upload phase=replicated job=710f9827c8f1d491b1593cf6acbeab8f4f35d963e59f7cd15bfd9b4e638acf0f duration_us=440476
+2026/10/31 07:25:54 image_upload phase=preauth route=/api/posts duration_us=102933
+2026/10/31 07:25:54 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87332
+2026/10/31 07:25:54 image_upload phase=save image_id=424e8826-c2e6-400f-beeb-5425915074e0 bytes=3759501 local_fsync_us=13256 job_fsync_us=6601
+2026/10/31 07:25:54 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:25:54 image_upload phase=metadata kind=post image_id=424e8826-c2e6-400f-beeb-5425915074e0 duration_us=117267
+2026/10/31 07:25:56 image_upload phase=replicated job=6a90a7c6f51adb74dd25a0437dd49f18fc8ccf9db73840ae72efd1997d2ae3c5 duration_us=1342744
+2026/10/31 07:25:58 image_upload phase=preauth route=/api/me/profile-image duration_us=103056
+2026/10/31 07:25:58 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6841
+2026/10/31 07:25:58 image_upload phase=save image_id=8b85df4c-13af-470a-af3a-cf41ebf7372e bytes=235755 local_fsync_us=9975 job_fsync_us=6990
+2026/10/31 07:25:58 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:25:58 image_upload phase=metadata kind=profile image_id=8b85df4c-13af-470a-af3a-cf41ebf7372e duration_us=111774
+2026/10/31 07:25:58 image_upload phase=replicated job=b2027265334e9e5c19e2543874bae57f9a30339a053f478e69f7404823444ea8 duration_us=443955
+2026/10/31 07:25:59 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109590
+2026/10/31 07:25:59 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6027
+2026/10/31 07:25:59 image_upload phase=save image_id=a4c93b94-2c85-4a30-95eb-2bb344aa4735 bytes=235755 local_fsync_us=11023 job_fsync_us=7402
+2026/10/31 07:25:59 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:25:59 image_upload phase=metadata kind=realmoji image_id=a4c93b94-2c85-4a30-95eb-2bb344aa4735 duration_us=126398
+2026/10/31 07:25:59 image_upload phase=replicated job=2204c1e4ad7047f0ba95844def9885ab1b698fc0c15c449a74b3a0441688f5c0 duration_us=440254
+2026/10/31 07:26:00 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109007
+2026/10/31 07:26:00 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5952
+2026/10/31 07:26:00 image_upload phase=save image_id=1ac9abac-47a2-4828-b4e7-ede23b0b4dd5 bytes=235755 local_fsync_us=8286 job_fsync_us=5833
+2026/10/31 07:26:00 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:01 image_upload phase=metadata kind=realmoji image_id=1ac9abac-47a2-4828-b4e7-ede23b0b4dd5 duration_us=125386
+2026/10/31 07:26:01 image_upload phase=replicated job=a18e60073c9a05e6797cd903a132ea2b94ac165c87e0eb5a1ad26852802533ae duration_us=438563
+2026/10/31 07:26:02 image_upload phase=preauth route=/api/posts duration_us=103106
+2026/10/31 07:26:02 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87137
+2026/10/31 07:26:02 image_upload phase=save image_id=0f473a8a-979a-4753-874f-4ed575648a36 bytes=3759501 local_fsync_us=14482 job_fsync_us=7188
+2026/10/31 07:26:02 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:02 image_upload phase=metadata kind=post image_id=0f473a8a-979a-4753-874f-4ed575648a36 duration_us=118454
+2026/10/31 07:26:04 image_upload phase=replicated job=10a213b2071846ab6bef456491fb1552bcd8587b97bf5a5c2ecf3e014f092de8 duration_us=1338967
+2026/10/31 07:26:06 image_upload phase=preauth route=/api/me/profile-image duration_us=103077
+2026/10/31 07:26:06 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6739
+2026/10/31 07:26:06 image_upload phase=save image_id=78ea183a-6d22-4804-88b4-d45894dee695 bytes=235755 local_fsync_us=7797 job_fsync_us=5789
+2026/10/31 07:26:06 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:06 image_upload phase=metadata kind=profile image_id=78ea183a-6d22-4804-88b4-d45894dee695 duration_us=112716
+2026/10/31 07:26:06 image_upload phase=replicated job=5de6a204df3d0d35ec9dc1e80bdfe93b148624c8714835f189e29ead64d1b82d duration_us=434976
+2026/10/31 07:26:07 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109466
+2026/10/31 07:26:07 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6041
+2026/10/31 07:26:07 image_upload phase=save image_id=1da90336-5578-4c19-8ab1-215fe1a578a1 bytes=235755 local_fsync_us=11395 job_fsync_us=6712
+2026/10/31 07:26:07 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:07 image_upload phase=metadata kind=realmoji image_id=1da90336-5578-4c19-8ab1-215fe1a578a1 duration_us=126372
+2026/10/31 07:26:07 image_upload phase=replicated job=f2919b8454fc130b68a0412941a19e57ee58334a3c55d2175c6ffc42b23fac4f duration_us=439124
+2026/10/31 07:26:08 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109256
+2026/10/31 07:26:08 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5859
+2026/10/31 07:26:08 image_upload phase=save image_id=491c381d-e13c-4a4c-ac36-13b62754b3e7 bytes=235755 local_fsync_us=9831 job_fsync_us=7241
+2026/10/31 07:26:08 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:09 image_upload phase=metadata kind=realmoji image_id=491c381d-e13c-4a4c-ac36-13b62754b3e7 duration_us=125024
+2026/10/31 07:26:09 image_upload phase=replicated job=3e598ab435f877e00cb8ed7bb3c90853e50c68e39d9fef2fd216e1056c4b680b duration_us=441725
+2026/10/31 07:26:10 image_upload phase=preauth route=/api/posts duration_us=102658
+2026/10/31 07:26:10 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=86955
+2026/10/31 07:26:10 image_upload phase=save image_id=46aa2959-418c-4417-8d8c-c11c1c5e0fae bytes=3759501 local_fsync_us=11196 job_fsync_us=5489
+2026/10/31 07:26:10 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:10 image_upload phase=metadata kind=post image_id=46aa2959-418c-4417-8d8c-c11c1c5e0fae duration_us=116342
+2026/10/31 07:26:12 image_upload phase=replicated job=40af5d530518692798713772ddb8a4e72144127409a3b2f79b56471dba176566 duration_us=1338888
+2026/10/31 07:26:14 image_upload phase=preauth route=/api/me/profile-image duration_us=103084
+2026/10/31 07:26:14 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6671
+2026/10/31 07:26:14 image_upload phase=save image_id=87d64e57-4d79-4245-901b-403949cf7076 bytes=235755 local_fsync_us=8915 job_fsync_us=6443
+2026/10/31 07:26:14 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:14 image_upload phase=metadata kind=profile image_id=87d64e57-4d79-4245-901b-403949cf7076 duration_us=113072
+2026/10/31 07:26:14 image_upload phase=replicated job=1fb71a0717cc7a6e5ea55d33cf7b9754dcab7d4d6a09639db6fa9a4289a02615 duration_us=436735
+2026/10/31 07:26:15 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109248
+2026/10/31 07:26:15 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6105
+2026/10/31 07:26:15 image_upload phase=save image_id=f372e051-ecae-46a4-9466-9eb8cdb88852 bytes=235755 local_fsync_us=7635 job_fsync_us=4262
+2026/10/31 07:26:15 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:15 image_upload phase=metadata kind=realmoji image_id=f372e051-ecae-46a4-9466-9eb8cdb88852 duration_us=125094
+2026/10/31 07:26:15 image_upload phase=replicated job=454015a676dc32e55a7a114ca41041dc1277ada212839d7fd15e4886c5d7df6f duration_us=434805
+2026/10/31 07:26:16 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109048
+2026/10/31 07:26:16 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5926
+2026/10/31 07:26:16 image_upload phase=save image_id=69f3ae56-689a-4d4e-b759-e2a249d9c718 bytes=235755 local_fsync_us=7802 job_fsync_us=6684
+2026/10/31 07:26:16 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:16 image_upload phase=metadata kind=realmoji image_id=69f3ae56-689a-4d4e-b759-e2a249d9c718 duration_us=126597
+2026/10/31 07:26:17 image_upload phase=replicated job=33296ab897f663707b14dd0ebe6519d6d2526997186ae191b01ce0755c86e8f8 duration_us=435144
+2026/10/31 07:26:18 image_upload phase=preauth route=/api/posts duration_us=102701
+2026/10/31 07:26:18 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=86998
+2026/10/31 07:26:18 image_upload phase=save image_id=30a7a4e2-ab1c-49bb-8d30-c7266b4e11c2 bytes=3759501 local_fsync_us=16048 job_fsync_us=5137
+2026/10/31 07:26:18 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:18 image_upload phase=metadata kind=post image_id=30a7a4e2-ab1c-49bb-8d30-c7266b4e11c2 duration_us=115723
+2026/10/31 07:26:20 image_upload phase=replicated job=6f9dc940e8468b35528bc444412cdb141b1140dbf9405bc581c8bc915c4b4035 duration_us=1339172
+2026/10/31 07:26:22 image_upload phase=preauth route=/api/me/profile-image duration_us=103039
+2026/10/31 07:26:22 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5562
+2026/10/31 07:26:22 image_upload phase=save image_id=003a69f1-8810-4b9b-8dbb-a53989a75412 bytes=235755 local_fsync_us=7451 job_fsync_us=5987
+2026/10/31 07:26:22 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:22 image_upload phase=metadata kind=profile image_id=003a69f1-8810-4b9b-8dbb-a53989a75412 duration_us=112166
+2026/10/31 07:26:22 image_upload phase=replicated job=58043d23762bbfb494601922ef2cc814494bf4f5f369fd620a5c42cbc24180f7 duration_us=436367
+2026/10/31 07:26:23 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109337
+2026/10/31 07:26:23 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6226
+2026/10/31 07:26:23 image_upload phase=save image_id=00e7232f-a43c-48e8-a056-bc511c98247c bytes=235755 local_fsync_us=9079 job_fsync_us=6685
+2026/10/31 07:26:23 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:23 image_upload phase=metadata kind=realmoji image_id=00e7232f-a43c-48e8-a056-bc511c98247c duration_us=124792
+2026/10/31 07:26:23 image_upload phase=replicated job=ac29bfc3a23a20f2a7ec2681c40653731bd4f1258f8120b006f5acc4e09657c1 duration_us=437057
+2026/10/31 07:26:24 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108940
+2026/10/31 07:26:24 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5732
+2026/10/31 07:26:24 image_upload phase=save image_id=0c6dfb6b-e236-4ec4-bc9d-3084bf8233b3 bytes=235755 local_fsync_us=7871 job_fsync_us=5850
+2026/10/31 07:26:24 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:24 image_upload phase=metadata kind=realmoji image_id=0c6dfb6b-e236-4ec4-bc9d-3084bf8233b3 duration_us=126458
+2026/10/31 07:26:25 image_upload phase=replicated job=0b42b11e1c1467dccfe31ead38b08717bcbd474ec44853bedf7acb9b3871a9a3 duration_us=433325
+2026/10/31 07:26:26 image_upload phase=preauth route=/api/posts duration_us=103852
+2026/10/31 07:26:26 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87573
+2026/10/31 07:26:26 image_upload phase=save image_id=cd1f11c5-ed5f-4de0-a812-286866f7f6b9 bytes=3759501 local_fsync_us=13447 job_fsync_us=5577
+2026/10/31 07:26:26 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:26 image_upload phase=metadata kind=post image_id=cd1f11c5-ed5f-4de0-a812-286866f7f6b9 duration_us=116246
+2026/10/31 07:26:27 image_upload phase=replicated job=ddd46deeed8c397611d29726a6b1ff2b4b729624be22338f4a1b276bf9008c67 duration_us=1338187
+2026/10/31 07:26:29 image_upload phase=preauth route=/api/me/profile-image duration_us=103078
+2026/10/31 07:26:29 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5651
+2026/10/31 07:26:29 image_upload phase=save image_id=7bf51802-7b3a-4f44-9977-a2d0f22c15f8 bytes=235755 local_fsync_us=8539 job_fsync_us=6843
+2026/10/31 07:26:29 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:30 image_upload phase=metadata kind=profile image_id=7bf51802-7b3a-4f44-9977-a2d0f22c15f8 duration_us=112723
+2026/10/31 07:26:30 image_upload phase=replicated job=b750c395f063c941286ad0f365d8f7b0cdaa09bd361578004378ef9d76a16510 duration_us=436651
+2026/10/31 07:26:31 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109253
+2026/10/31 07:26:31 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6295
+2026/10/31 07:26:31 image_upload phase=save image_id=c47c51fb-e359-4e05-a3d2-6dfe1866101b bytes=235755 local_fsync_us=11284 job_fsync_us=7759
+2026/10/31 07:26:31 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:31 image_upload phase=metadata kind=realmoji image_id=c47c51fb-e359-4e05-a3d2-6dfe1866101b duration_us=126083
+2026/10/31 07:26:31 image_upload phase=replicated job=f4ffb927158c04a67f10f39ffa71d01a6f7b69b5e8c319885c3003e0e63a756d duration_us=441317
+2026/10/31 07:26:32 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109184
+2026/10/31 07:26:32 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5967
+2026/10/31 07:26:32 image_upload phase=save image_id=1696b018-f730-483f-a4d7-0b91e6c3301c bytes=235755 local_fsync_us=11503 job_fsync_us=7991
+2026/10/31 07:26:32 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:32 image_upload phase=metadata kind=realmoji image_id=1696b018-f730-483f-a4d7-0b91e6c3301c duration_us=125685
+2026/10/31 07:26:33 image_upload phase=replicated job=93fa2a8284552dfe2c6b85939f4bbd0f895dffef1c74d6dc4480d13ea5fd73a4 duration_us=442490
+2026/10/31 07:26:34 image_upload phase=preauth route=/api/posts duration_us=102629
+2026/10/31 07:26:34 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87880
+2026/10/31 07:26:34 image_upload phase=save image_id=e7a08fb0-78d1-4341-9902-82083afbf09a bytes=3759501 local_fsync_us=13083 job_fsync_us=3813
+2026/10/31 07:26:34 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:34 image_upload phase=metadata kind=post image_id=e7a08fb0-78d1-4341-9902-82083afbf09a duration_us=116789
+2026/10/31 07:26:35 image_upload phase=replicated job=56f97251ec9f539ead747dbc70fd5277a97180ed1d33303c2c519073b5fa6847 duration_us=1338696
+2026/10/31 07:26:37 image_upload phase=preauth route=/api/me/profile-image duration_us=103047
+2026/10/31 07:26:37 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6737
+2026/10/31 07:26:37 image_upload phase=save image_id=10a467b4-6ff2-4044-9379-1298cefb2a5e bytes=235755 local_fsync_us=6577 job_fsync_us=4141
+2026/10/31 07:26:37 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:38 image_upload phase=metadata kind=profile image_id=10a467b4-6ff2-4044-9379-1298cefb2a5e duration_us=111867
+2026/10/31 07:26:38 image_upload phase=replicated job=45ec2fb7bb50b89faa4a16c4352b58595098ce5c7ef92ec9f3d9e297b1ed9153 duration_us=435264
+2026/10/31 07:26:39 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108879
+2026/10/31 07:26:39 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5959
+2026/10/31 07:26:39 image_upload phase=save image_id=786422cd-e805-48ea-ac1c-ea15cce1ac74 bytes=235755 local_fsync_us=9604 job_fsync_us=6950
+2026/10/31 07:26:39 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:39 image_upload phase=metadata kind=realmoji image_id=786422cd-e805-48ea-ac1c-ea15cce1ac74 duration_us=126627
+2026/10/31 07:26:39 image_upload phase=replicated job=819c929532f7a19dbfa4ace106e5e9b53d9a4f5de6b17361f5074442c80eef5f duration_us=442044
+2026/10/31 07:26:40 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108776
+2026/10/31 07:26:40 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5867
+2026/10/31 07:26:40 image_upload phase=save image_id=dc1aa179-3879-4ddc-9096-66606006083b bytes=235755 local_fsync_us=10676 job_fsync_us=6767
+2026/10/31 07:26:40 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:40 image_upload phase=metadata kind=realmoji image_id=dc1aa179-3879-4ddc-9096-66606006083b duration_us=125892
+2026/10/31 07:26:41 image_upload phase=replicated job=b6e871befae7a256aedfa34325d46bb41e9b9202ea36e6217110597efb6b5626 duration_us=439055
+2026/10/31 07:26:42 image_upload phase=preauth route=/api/posts duration_us=102997
+2026/10/31 07:26:42 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87280
+2026/10/31 07:26:42 image_upload phase=save image_id=025e2b6e-8988-4750-afad-23eb500b2ef4 bytes=3759501 local_fsync_us=12201 job_fsync_us=4990
+2026/10/31 07:26:42 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:42 image_upload phase=metadata kind=post image_id=025e2b6e-8988-4750-afad-23eb500b2ef4 duration_us=116918
+2026/10/31 07:26:43 image_upload phase=replicated job=7470c1a3086d1af8508d6f889ceedbb1715000aa475ad633b76821572810d7f8 duration_us=1339972
+2026/10/31 07:26:45 image_upload phase=preauth route=/api/me/profile-image duration_us=103172
+2026/10/31 07:26:45 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6882
+2026/10/31 07:26:45 image_upload phase=save image_id=0cb6fc6d-a69e-4ae3-89cd-5146979afc1d bytes=235755 local_fsync_us=10601 job_fsync_us=6118
+2026/10/31 07:26:45 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:46 image_upload phase=metadata kind=profile image_id=0cb6fc6d-a69e-4ae3-89cd-5146979afc1d duration_us=112431
+2026/10/31 07:26:46 image_upload phase=replicated job=4ca9378ca5b3f4666bdb84d1ae5df231adce4a0eafc12300a76ba711d2b52b23 duration_us=436934
+2026/10/31 07:26:47 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109491
+2026/10/31 07:26:47 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6113
+2026/10/31 07:26:47 image_upload phase=save image_id=853f4b4f-162a-49b7-808a-063441fc1620 bytes=235755 local_fsync_us=9709 job_fsync_us=6511
+2026/10/31 07:26:47 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:47 image_upload phase=metadata kind=realmoji image_id=853f4b4f-162a-49b7-808a-063441fc1620 duration_us=126468
+2026/10/31 07:26:47 image_upload phase=replicated job=362b7c7a171a27f2bcce313d411376b651aafde8cbac53750797ea3184bb5714 duration_us=440453
+2026/10/31 07:26:48 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109224
+2026/10/31 07:26:48 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5869
+2026/10/31 07:26:48 image_upload phase=save image_id=041c6043-df83-4db4-82bb-d39224ae6f4e bytes=235755 local_fsync_us=9359 job_fsync_us=6586
+2026/10/31 07:26:48 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:48 image_upload phase=metadata kind=realmoji image_id=041c6043-df83-4db4-82bb-d39224ae6f4e duration_us=125082
+2026/10/31 07:26:49 image_upload phase=replicated job=6846c5e5491f86586eece30a11d8d0775d1537b1b4f976ee1c958c51183a307b duration_us=439464
+2026/10/31 07:26:50 image_upload phase=preauth route=/api/posts duration_us=102747
+2026/10/31 07:26:50 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87187
+2026/10/31 07:26:50 image_upload phase=save image_id=b18abbf9-cd1a-463e-961d-20304576eaf7 bytes=3759501 local_fsync_us=11380 job_fsync_us=4252
+2026/10/31 07:26:50 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:50 image_upload phase=metadata kind=post image_id=b18abbf9-cd1a-463e-961d-20304576eaf7 duration_us=117054
+2026/10/31 07:26:51 image_upload phase=replicated job=1c312933476411e5a0ac65e25dda46189dcc002bb50104b86228f5959a240738 duration_us=1338475
+2026/10/31 07:26:53 image_upload phase=preauth route=/api/me/profile-image duration_us=103193
+2026/10/31 07:26:53 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6785
+2026/10/31 07:26:53 image_upload phase=save image_id=342aa796-a549-4a15-af75-34167e09a894 bytes=235755 local_fsync_us=7351 job_fsync_us=4016
+2026/10/31 07:26:53 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:26:54 image_upload phase=metadata kind=profile image_id=342aa796-a549-4a15-af75-34167e09a894 duration_us=111919
+2026/10/31 07:26:54 image_upload phase=replicated job=3630df8b8b3878ae5820d208de94cc733422e352123ae39554ec9f459de76d89 duration_us=435289
+2026/10/31 07:26:55 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109250
+2026/10/31 07:26:55 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6001
+2026/10/31 07:26:55 image_upload phase=save image_id=bc51d991-3817-4a15-95ca-e4674e1f9e03 bytes=235755 local_fsync_us=9462 job_fsync_us=6431
+2026/10/31 07:26:55 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:26:55 image_upload phase=metadata kind=realmoji image_id=bc51d991-3817-4a15-95ca-e4674e1f9e03 duration_us=125962
+2026/10/31 07:26:55 image_upload phase=replicated job=c7890bb5f183524c529ea5c18826c4ef972762d60721d30bbb521a8f4c659d4a duration_us=440240
+2026/10/31 07:26:56 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108911
+2026/10/31 07:26:56 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5635
+2026/10/31 07:26:56 image_upload phase=save image_id=ad6f3952-3497-4abf-938f-eabc4552281c bytes=235755 local_fsync_us=9748 job_fsync_us=6112
+2026/10/31 07:26:56 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:26:56 image_upload phase=metadata kind=realmoji image_id=ad6f3952-3497-4abf-938f-eabc4552281c duration_us=125917
+2026/10/31 07:26:57 image_upload phase=replicated job=f67c4940e08ee2528b22dde0fb543e6d4fd1d742b684bd15a4b19bf05842e849 duration_us=439498
+2026/10/31 07:26:58 image_upload phase=preauth route=/api/posts duration_us=103949
+2026/10/31 07:26:58 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87056
+2026/10/31 07:26:58 image_upload phase=save image_id=c28c33fe-b20a-49ce-96a3-52cba233a8f3 bytes=3759501 local_fsync_us=11686 job_fsync_us=5708
+2026/10/31 07:26:58 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:26:58 image_upload phase=metadata kind=post image_id=c28c33fe-b20a-49ce-96a3-52cba233a8f3 duration_us=117064
+2026/10/31 07:26:59 image_upload phase=replicated job=1a95a321ae3231eb81112ccfb537f41caaa45b3c930f45b24f4ad31784d91ecd duration_us=1338211
+2026/10/31 07:27:01 image_upload phase=preauth route=/api/me/profile-image duration_us=103224
+2026/10/31 07:27:01 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5576
+2026/10/31 07:27:01 image_upload phase=save image_id=17895fd0-2c4b-4663-bd84-31e9fec9f9a4 bytes=235755 local_fsync_us=10135 job_fsync_us=5731
+2026/10/31 07:27:01 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:27:01 image_upload phase=metadata kind=profile image_id=17895fd0-2c4b-4663-bd84-31e9fec9f9a4 duration_us=113132
+2026/10/31 07:27:02 image_upload phase=replicated job=ed27ef034ce417e707117b8e7bc2255f424ed19689b0698fa38b597947003af2 duration_us=440533
+2026/10/31 07:27:03 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109509
+2026/10/31 07:27:03 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6102
+2026/10/31 07:27:03 image_upload phase=save image_id=4caa7c46-7b6b-422b-88ee-f561f31d316c bytes=235755 local_fsync_us=10507 job_fsync_us=7247
+2026/10/31 07:27:03 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:27:03 image_upload phase=metadata kind=realmoji image_id=4caa7c46-7b6b-422b-88ee-f561f31d316c duration_us=129457
+2026/10/31 07:27:03 image_upload phase=replicated job=25f8f1df5b2576f0c6be66b50a16f8694ffc197b60ae1e914a72bbeec4b6a94b duration_us=439771
+2026/10/31 07:27:04 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109486
+2026/10/31 07:27:04 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5620
+2026/10/31 07:27:04 image_upload phase=save image_id=67b4bbca-0edf-4c15-b53b-ae3c17b26d10 bytes=235755 local_fsync_us=10648 job_fsync_us=7286
+2026/10/31 07:27:04 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:27:04 image_upload phase=metadata kind=realmoji image_id=67b4bbca-0edf-4c15-b53b-ae3c17b26d10 duration_us=126243
+2026/10/31 07:27:05 image_upload phase=replicated job=0f8dcffb7d4a5a8dae9c1381bc44b6af4f164893cd89eece9011fec536a003c1 duration_us=441666
+2026/10/31 07:27:06 image_upload phase=preauth route=/api/posts duration_us=102817
+2026/10/31 07:27:06 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=86915
+2026/10/31 07:27:06 image_upload phase=save image_id=e2be65a3-f619-40bf-a42f-a9fe9e3e865d bytes=3759501 local_fsync_us=12541 job_fsync_us=5169
+2026/10/31 07:27:06 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:27:06 image_upload phase=metadata kind=post image_id=e2be65a3-f619-40bf-a42f-a9fe9e3e865d duration_us=116451
+2026/10/31 07:27:07 image_upload phase=replicated job=bf8281644f4132706819d603adf2411ce5c3b2ba3e449b9a49fdf8cc1591c772 duration_us=1339028
+2026/10/31 07:27:09 image_upload phase=preauth route=/api/me/profile-image duration_us=103156
+2026/10/31 07:27:09 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6549
+2026/10/31 07:27:09 image_upload phase=save image_id=8d09ca9b-c5f5-4bc7-991f-880b1f3e7b03 bytes=235755 local_fsync_us=7589 job_fsync_us=4635
+2026/10/31 07:27:09 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:27:09 image_upload phase=metadata kind=profile image_id=8d09ca9b-c5f5-4bc7-991f-880b1f3e7b03 duration_us=111862
+2026/10/31 07:27:10 image_upload phase=replicated job=3343bf0db7acae0442f1c82e7ca70e6d76da9805cb3a94a405e94bb4a91e96f4 duration_us=434761
+2026/10/31 07:27:11 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109391
+2026/10/31 07:27:11 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5796
+2026/10/31 07:27:11 image_upload phase=save image_id=329bf289-0aba-4bbf-85b5-074392c52cee bytes=235755 local_fsync_us=9932 job_fsync_us=7326
+2026/10/31 07:27:11 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:27:11 image_upload phase=metadata kind=realmoji image_id=329bf289-0aba-4bbf-85b5-074392c52cee duration_us=125601
+2026/10/31 07:27:11 image_upload phase=replicated job=0779447a6bd55ead8634a09f9e8519b8a8c2442a36c1e58db35fa7d0ed8168d6 duration_us=438238
+2026/10/31 07:27:12 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=108926
+2026/10/31 07:27:12 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5566
+2026/10/31 07:27:12 image_upload phase=save image_id=2c59279b-dbdb-4fd3-93bc-68e5acf0f8d4 bytes=235755 local_fsync_us=10339 job_fsync_us=7604
+2026/10/31 07:27:12 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:27:12 image_upload phase=metadata kind=realmoji image_id=2c59279b-dbdb-4fd3-93bc-68e5acf0f8d4 duration_us=125593
+2026/10/31 07:27:13 image_upload phase=replicated job=4d5fbd034c5a85ea35073680185b96f1acde2e8eada98d1bae63ac7cbd657281 duration_us=439443
+2026/10/31 07:27:14 image_upload phase=preauth route=/api/posts duration_us=102599
+2026/10/31 07:27:14 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87207
+2026/10/31 07:27:14 image_upload phase=save image_id=534c3d16-3797-4f5b-a6b4-2a7df21f44cb bytes=3759501 local_fsync_us=15377 job_fsync_us=5520
+2026/10/31 07:27:14 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:27:14 image_upload phase=metadata kind=post image_id=534c3d16-3797-4f5b-a6b4-2a7df21f44cb duration_us=116619
+2026/10/31 07:27:15 image_upload phase=replicated job=6b66f03cebdbfeb167f3d603b988d31d821ea4238fb1b2f66bacfcfe5c26ec4d duration_us=1339492
+2026/10/31 07:27:17 image_upload phase=preauth route=/api/me/profile-image duration_us=103045
+2026/10/31 07:27:17 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5596
+2026/10/31 07:27:17 image_upload phase=save image_id=700419f8-553a-4dcb-90fd-da7b98091b84 bytes=235755 local_fsync_us=8022 job_fsync_us=4725
+2026/10/31 07:27:17 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:27:17 image_upload phase=metadata kind=profile image_id=700419f8-553a-4dcb-90fd-da7b98091b84 duration_us=111357
+2026/10/31 07:27:18 image_upload phase=replicated job=71b250bf1efc7a22d2c7227bf4a0cb40d52780368940096e3d1b924d2d25f7ad duration_us=435358
+2026/10/31 07:27:19 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109327
+2026/10/31 07:27:19 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5518
+2026/10/31 07:27:19 image_upload phase=save image_id=40b3c801-eabb-4500-932e-e2c457de9f86 bytes=235755 local_fsync_us=8351 job_fsync_us=6443
+2026/10/31 07:27:19 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:27:19 image_upload phase=metadata kind=realmoji image_id=40b3c801-eabb-4500-932e-e2c457de9f86 duration_us=125712
+2026/10/31 07:27:19 image_upload phase=replicated job=63465b19102b0f6b002cb99385c27ede8ca75b8d25c80bffb43adc6290c16602 duration_us=437408
+2026/10/31 07:27:20 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109077
+2026/10/31 07:27:20 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6315
+2026/10/31 07:27:20 image_upload phase=save image_id=b8830e36-45e5-4b4e-906b-e806f2be2144 bytes=235755 local_fsync_us=7124 job_fsync_us=6030
+2026/10/31 07:27:20 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:27:20 image_upload phase=metadata kind=realmoji image_id=b8830e36-45e5-4b4e-906b-e806f2be2144 duration_us=126651
+2026/10/31 07:27:21 image_upload phase=replicated job=dfe36a45ce3db15dfd94161dd224950beefd928946d5f810815d16f3d661b3cb duration_us=437235
+2026/10/31 07:27:22 image_upload phase=preauth route=/api/posts duration_us=104076
+2026/10/31 07:27:22 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=87014
+2026/10/31 07:27:22 image_upload phase=save image_id=29dc63ee-5b8e-40d6-8a3a-12e6d82b0e7c bytes=3759501 local_fsync_us=16475 job_fsync_us=11265
+2026/10/31 07:27:22 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:27:22 image_upload phase=metadata kind=post image_id=29dc63ee-5b8e-40d6-8a3a-12e6d82b0e7c duration_us=117137
+2026/10/31 07:27:23 image_upload phase=replicated job=8bf6914e2e135ae69bbba9d9d9334b070d4030606f33b22466f8b78484556724 duration_us=1344154
+2026/10/31 07:27:25 image_upload phase=preauth route=/api/me/profile-image duration_us=103034
+2026/10/31 07:27:25 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=5681
+2026/10/31 07:27:25 image_upload phase=save image_id=3236f87a-9921-4bf9-a579-e2f68e807631 bytes=235755 local_fsync_us=5942 job_fsync_us=4171
+2026/10/31 07:27:25 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:27:25 image_upload phase=metadata kind=profile image_id=3236f87a-9921-4bf9-a579-e2f68e807631 duration_us=111556
+2026/10/31 07:27:26 image_upload phase=replicated job=a6b4c5d96b8f122a28d0a49ee82257c9c67d69fca01e58e606b400bd95651241 duration_us=431367
+2026/10/31 07:27:27 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109489
+2026/10/31 07:27:27 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=6187
+2026/10/31 07:27:27 image_upload phase=save image_id=575f4d47-2e0c-455f-968b-d9fd57bdf779 bytes=235755 local_fsync_us=8379 job_fsync_us=5946
+2026/10/31 07:27:27 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:27:27 image_upload phase=metadata kind=realmoji image_id=575f4d47-2e0c-455f-968b-d9fd57bdf779 duration_us=126196
+2026/10/31 07:27:27 image_upload phase=replicated job=77e2123a155861a59c4f6b7bb52d0deb3983344779e5b4798c9812cd90022d5d duration_us=436095
+2026/10/31 07:27:28 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109092
+2026/10/31 07:27:28 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5754
+2026/10/31 07:27:28 image_upload phase=save image_id=d9c4c255-e12a-4384-b53c-89c02ba0344f bytes=235755 local_fsync_us=8574 job_fsync_us=6128
+2026/10/31 07:27:28 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:27:28 image_upload phase=metadata kind=realmoji image_id=d9c4c255-e12a-4384-b53c-89c02ba0344f duration_us=125964
+2026/10/31 07:27:28 image_upload phase=replicated job=3201b7cbddad50205d0dac1c2c5136cbaf81c22b8abe80e8dde6ab99e6fc2ea0 duration_us=435303
+2026/10/31 07:27:30 image_upload phase=preauth route=/api/posts duration_us=102881
+2026/10/31 07:27:30 image_upload phase=jpeg route=/api/posts bytes=3759501 duration_us=86776
+2026/10/31 07:27:30 image_upload phase=save image_id=669d1a5f-fd28-4d5f-9ba2-0e98fa08d432 bytes=3759501 local_fsync_us=12248 job_fsync_us=5371
+2026/10/31 07:27:30 image_upload phase=rpc region=america bytes=229
+2026/10/31 07:27:30 image_upload phase=metadata kind=post image_id=669d1a5f-fd28-4d5f-9ba2-0e98fa08d432 duration_us=117386
+2026/10/31 07:27:31 image_upload phase=replicated job=61d29fe083440a59548ffe4bd4b76c484da051a019dd7933c95ccba213bd725a duration_us=1351852
+2026/10/31 07:27:33 image_upload phase=preauth route=/api/me/profile-image duration_us=122755
+2026/10/31 07:27:33 image_upload phase=jpeg route=/api/me/profile-image bytes=235755 duration_us=6956
+2026/10/31 07:27:33 image_upload phase=save image_id=44c544f4-9af0-4978-9f89-77b4ba7e1ef8 bytes=235755 local_fsync_us=8604 job_fsync_us=5992
+2026/10/31 07:27:33 image_upload phase=rpc region=america bytes=99
+2026/10/31 07:27:33 image_upload phase=metadata kind=profile image_id=44c544f4-9af0-4978-9f89-77b4ba7e1ef8 duration_us=111643
+2026/10/31 07:27:34 image_upload phase=replicated job=e0955961457fc58b0db731ce94d7e6bbe5a067ff9fd09d52f20f6b69fdc689b2 duration_us=436310
+2026/10/31 07:27:35 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109444
+2026/10/31 07:27:35 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5837
+2026/10/31 07:27:35 image_upload phase=save image_id=e1e4ead3-5ad8-46d2-bbc6-21dbe262a794 bytes=235755 local_fsync_us=7711 job_fsync_us=4571
+2026/10/31 07:27:35 image_upload phase=rpc region=america bytes=172
+2026/10/31 07:27:35 image_upload phase=metadata kind=realmoji image_id=e1e4ead3-5ad8-46d2-bbc6-21dbe262a794 duration_us=126350
+2026/10/31 07:27:35 image_upload phase=replicated job=dd2d93027ff97a3d6da97b62411bdf4f58ae36243966e297004cb7b205f53eef duration_us=434619
+2026/10/31 07:27:36 image_upload phase=preauth route=/api/posts/:postId/realmojis duration_us=109319
+2026/10/31 07:27:36 image_upload phase=jpeg route=/api/posts/:postId/realmojis bytes=235755 duration_us=5848
+2026/10/31 07:27:36 image_upload phase=save image_id=60b83289-5361-4dd4-969f-a5e3dea49381 bytes=235755 local_fsync_us=7401 job_fsync_us=4419
+2026/10/31 07:27:36 image_upload phase=rpc region=america bytes=173
+2026/10/31 07:27:36 image_upload phase=metadata kind=realmoji image_id=60b83289-5361-4dd4-969f-a5e3dea49381 duration_us=126311
+2026/10/31 07:27:36 image_upload phase=replicated job=4dc7679a3369a52bbe58d56347a48e4c1373e4edc6a623a1d49dce37549bea5f duration_us=433493

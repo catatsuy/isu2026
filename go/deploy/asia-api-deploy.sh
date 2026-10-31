@@ -36,6 +36,6 @@ exit 1
 REMOTE
  if [[ "$host" = isu01 ]];then
   scp "$dir/primary-api-probe.py" isu02:/tmp/primary-api-probe.py
-  ssh -o BatchMode=yes isu02 'python3 /tmp/primary-api-probe.py europe ready'
+  ssh -o BatchMode=yes isu02 'python3 /tmp/primary-api-probe.py europe ready && python3 /tmp/primary-api-probe.py europe upload_ready'
  fi
 done

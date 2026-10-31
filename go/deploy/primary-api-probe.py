@@ -2,7 +2,7 @@
 """Read-only signed Primary API probe; run on an overseas app host."""
 import hashlib,hmac,json,secrets,time,urllib.request,sys
 region,operation=sys.argv[1:]
-assert region in ('europe','america') and operation in ('ready','diagnostics','replica_health')
+assert region in ('europe','america') and operation in ('ready','upload_ready','diagnostics','replica_health')
 token=open('/home/isucon/.image-file-token','rb').read().strip()
 key=hmac.new(token,b'isureal-primary-api-v1',hashlib.sha256).digest()
 request={'op':operation}
