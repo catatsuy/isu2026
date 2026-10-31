@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v5"
 )
 

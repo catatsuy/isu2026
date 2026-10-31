@@ -3,10 +3,10 @@ package isureal
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"strings"
 	"sync"
 
+	"github.com/goccy/go-json"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 )

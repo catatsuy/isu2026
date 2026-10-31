@@ -3,10 +3,10 @@ package isureal
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v5"
 )
 

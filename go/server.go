@@ -51,6 +51,7 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 		}
 	}
 	e := echo.New()
+	e.JSONSerializer = goJSONSerializer{}
 	e.IPExtractor = extractClientIP
 
 	e.Use(ActionLogMiddleware(config.LogLevel, os.Stdout))

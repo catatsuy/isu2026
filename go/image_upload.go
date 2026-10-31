@@ -2,13 +2,13 @@ package isureal
 
 import (
 	"bytes"
-	"encoding/json"
 	"image/jpeg"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"

@@ -2,12 +2,12 @@ package isureal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v5"
 )
 
