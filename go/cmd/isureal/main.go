@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"expvar"
 	"log"
 	"net"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 func main() {
 	if os.Getenv("ISUREAL_PPROF") == "1" {
 		mux := http.NewServeMux()
+		mux.Handle("/debug/vars", expvar.Handler())
 		mux.HandleFunc("/debug/pprof/", pprof.Index)
 		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)

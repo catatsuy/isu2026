@@ -2,6 +2,7 @@ package isureal
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/base64"
 	"net/url"
 	"strconv"
@@ -47,10 +48,20 @@ func TestImageURLCacheBoundAndConcurrent(t *testing.T) {
 	var cache imageURLCache
 	key := bytes.Repeat([]byte{1}, 32)
 	now := time.Now()
-	cache.entries = make(map[imageURLCacheKey]imageURLCacheEntry, imageURLCacheLimit)
+	cache.entries = make(map[imageURLCacheKey]*list.Element, imageURLCacheLimit)
 	for i := 0; i < imageURLCacheLimit; i++ {
-		cache.entries[imageURLCacheKey{imageID: strconv.Itoa(i)}] = imageURLCacheEntry{}
+		k := imageURLCacheKey{imageID: strconv.Itoa(i)}
+		cache.entries[k] = cache.recent.PushFront(imageURLCacheEntry{key: k, created: now})
 	}
+	hot := imageURLCacheKey{key: string(key), imageID: "hot"}
+	oldest := cache.recent.Back()
+	delete(cache.entries, oldest.Value.(imageURLCacheEntry).key)
+	oldest.Value = imageURLCacheEntry{key: hot, url: "retained", created: now}
+	cache.entries[hot] = oldest
+	if cache.get(key, "hot", now) != "retained" {
+		t.Fatal("hot entry not found")
+	}
+
 	var wg sync.WaitGroup
 	for i := 0; i < 16; i++ {
 		wg.Go(func() {
@@ -63,9 +74,16 @@ func TestImageURLCacheBoundAndConcurrent(t *testing.T) {
 	if len(cache.entries) > imageURLCacheLimit {
 		t.Fatal("cache exceeded limit")
 	}
-	if len(cache.entries) != 1 {
+	if len(cache.entries) != imageURLCacheLimit || cache.evictions != 1 || cache.misses != 1 {
 		t.Fatalf("unexpected cache contents: %d", len(cache.entries))
 	}
+	if _, ok := cache.entries[hot]; !ok {
+		t.Fatal("recently used entry evicted")
+	}
+	if _, ok := cache.entries[imageURLCacheKey{imageID: "1"}]; ok {
+		t.Fatal("least recently used entry retained")
+	}
+
 }
 
 func BenchmarkSignedImageURLCache(b *testing.B) {

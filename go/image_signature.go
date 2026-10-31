@@ -1,37 +1,53 @@
 package isureal
 
 import (
+	"container/list"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"expvar"
 	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 const imageURLLifetime = 24 * time.Hour
 const imageSignatureIterations = 1000
 
-const imageURLCacheLimit = 8192
+const imageURLCacheLimit = 32768
 
 type imageURLCacheKey struct {
 	key, imageID string
 }
 
 type imageURLCacheEntry struct {
+	key     imageURLCacheKey
 	url     string
 	created time.Time
 }
 
 type imageURLCache struct {
 	sync.Mutex
-	entries map[imageURLCacheKey]imageURLCacheEntry
+	entries                          map[imageURLCacheKey]*list.Element
+	recent                           list.List
+	pending                          singleflight.Group
+	hits, misses, expired, evictions uint64
 }
 
 var signedImageURLs imageURLCache
+
+func init() {
+	expvar.Publish("image_url_cache", expvar.Func(func() any {
+		signedImageURLs.Lock()
+		defer signedImageURLs.Unlock()
+		return map[string]uint64{"entries": uint64(len(signedImageURLs.entries)), "hits": signedImageURLs.hits, "misses": signedImageURLs.misses, "expired": signedImageURLs.expired, "evictions": signedImageURLs.evictions}
+	}))
+}
 
 func imageSigningKey(secretKeyHash string) ([]byte, error) {
 	key, err := hex.DecodeString(secretKeyHash)
@@ -57,27 +73,53 @@ func signedImageURL(user User, imageID string) string {
 	return signedImageURLs.get(user.ImageKey, imageID, time.Now())
 }
 
+func (cache *imageURLCache) lookup(cacheKey imageURLCacheKey, now time.Time) (string, bool) {
+	cache.Lock()
+	defer cache.Unlock()
+	if element := cache.entries[cacheKey]; element != nil {
+		entry := element.Value.(imageURLCacheEntry)
+		if age := now.Sub(entry.created); age >= 0 && age < time.Minute {
+			cache.recent.MoveToFront(element)
+			cache.hits++
+			return entry.url, true
+		}
+		cache.expired++
+		delete(cache.entries, cacheKey)
+		cache.recent.Remove(element)
+	}
+	return "", false
+}
+
 func (cache *imageURLCache) get(key []byte, imageID string, now time.Time) string {
 	cacheKey := imageURLCacheKey{key: string(key), imageID: imageID}
-	cache.Lock()
-	entry, ok := cache.entries[cacheKey]
-	cache.Unlock()
-	// Reuse only recently issued URLs. Key rotation and image changes naturally
-	// miss the cache; image authorization is still checked on every download.
-	if age := now.Sub(entry.created); ok && age >= 0 && age < time.Minute {
-		return entry.url
+	if result, ok := cache.lookup(cacheKey, now); ok {
+		return result
 	}
-	exp := now.Add(imageURLLifetime).Unix()
-	query := url.Values{
-		"exp": {strconv.FormatInt(exp, 10)},
-		"sig": {base64.RawURLEncoding.EncodeToString(imageSignature(key, imageID, exp))},
-	}
-	result := "/api/images/" + url.PathEscape(imageID) + "?" + query.Encode()
-	cache.Lock()
-	if cache.entries == nil || len(cache.entries) >= imageURLCacheLimit {
-		cache.entries = make(map[imageURLCacheKey]imageURLCacheEntry)
-	}
-	cache.entries[cacheKey] = imageURLCacheEntry{url: result, created: now}
-	cache.Unlock()
-	return result
+	// Coalesce simultaneous misses without holding the LRU lock during HMAC.
+	value, _, _ := cache.pending.Do(strconv.Itoa(len(key))+":"+cacheKey.key+imageID, func() (any, error) {
+		if result, ok := cache.lookup(cacheKey, now); ok {
+			return result, nil
+		}
+		exp := now.Add(imageURLLifetime).Unix()
+		query := url.Values{
+			"exp": {strconv.FormatInt(exp, 10)},
+			"sig": {base64.RawURLEncoding.EncodeToString(imageSignature(key, imageID, exp))},
+		}
+		result := "/api/images/" + url.PathEscape(imageID) + "?" + query.Encode()
+		cache.Lock()
+		defer cache.Unlock()
+		cache.misses++
+		if cache.entries == nil {
+			cache.entries = make(map[imageURLCacheKey]*list.Element)
+		}
+		if len(cache.entries) >= imageURLCacheLimit {
+			oldest := cache.recent.Back()
+			delete(cache.entries, oldest.Value.(imageURLCacheEntry).key)
+			cache.recent.Remove(oldest)
+			cache.evictions++
+		}
+		cache.entries[cacheKey] = cache.recent.PushFront(imageURLCacheEntry{key: cacheKey, url: result, created: now})
+		return result, nil
+	})
+	return value.(string)
 }
