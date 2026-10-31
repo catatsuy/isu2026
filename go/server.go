@@ -11,10 +11,11 @@ import (
 )
 
 type HandlerContext struct {
-	DB         *sqlx.DB
-	Config     *Config
-	IPBans     *IPBanList
-	ImageFiles *ImageFileStore
+	DB            *sqlx.DB
+	Config        *Config
+	IPBans        *IPBanList
+	ImageFiles    *ImageFileStore
+	Notifications *notificationHub
 }
 
 func NewServer(config *Config) *echo.Echo {
@@ -43,10 +44,11 @@ func NewServer(config *Config) *echo.Echo {
 		panic(err)
 	}
 	handlerContext := &HandlerContext{
-		ImageFiles: imageFiles,
-		DB:         db,
-		Config:     config,
-		IPBans:     &IPBanList{},
+		DB:            db,
+		Config:        config,
+		IPBans:        &IPBanList{},
+		ImageFiles:    imageFiles,
+		Notifications: newNotificationHub(db),
 	}
 	e.Use(IPBanMiddleware(handlerContext))
 

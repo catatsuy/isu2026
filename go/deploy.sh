@@ -12,6 +12,11 @@ script_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 remote_dir=${DEPLOY_DIR:-/home/isucon/webapp/go}
 service=${DEPLOY_SERVICE:-isureal-go.service}
 arch=${DEPLOY_ARCH:-amd64}
+before_benchmark=${BEFORE_BENCHMARK_SCRIPT:-$HOME/isucon-measurement/before_benchmark.sh}
+
+# Check the local controller before changing any application. Run it once only
+# after every deployment succeeds; it prepares all measurement hosts, including DB.
+[[ -f "$before_benchmark" && -r "$before_benchmark" ]] || { echo "Cannot read benchmark preparation script: $before_benchmark" >&2; exit 2; }
 
 # These values become arguments to the remote login shell. Keep them literal.
 [[ "$remote_dir" =~ ^/[a-zA-Z0-9_./-]+$ && "$remote_dir" != / ]] || { echo "Invalid DEPLOY_DIR" >&2; exit 2; }
@@ -108,3 +113,9 @@ REMOTE
 done
 
 echo "Deployment finished"
+echo "Preparing benchmark measurement"
+if ! bash "$before_benchmark"; then
+  echo "Deployment succeeded, but benchmark preparation failed. Do not start the benchmark; check measurement state before retrying." >&2
+  exit 1
+fi
+echo "Deployment and benchmark preparation finished"

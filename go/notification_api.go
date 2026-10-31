@@ -34,21 +34,28 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 		if err := controller.Flush(); err != nil {
 			return nil
 		}
-		ticker := time.NewTicker(500 * time.Millisecond)
-		defer ticker.Stop()
+		// Register before the initial SELECT. A buffered wake preserves a window
+		// change that commits while that SELECT is running; the initial SELECT
+		// also covers changes already observed by the hub before registration.
+		subscription := h.Notifications.subscribe(userID, session.Region)
+		defer h.Notifications.unsubscribe(subscription)
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-subscription.done:
+			return nil
+		case <-subscription.ready:
+		}
 		for {
-			user, err := getUser(ctx, h.DB, userID)
-			if err != nil {
-				if !errors.Is(err, sql.ErrNoRows) && ctx.Err() == nil {
-					c.Logger().Error("failed to get notification recipient", "error", err)
-				}
+			select {
+			case <-ctx.Done():
 				return nil
-			}
-			if user.Region != session.Region {
+			case <-subscription.done:
 				return nil
+			default:
 			}
 			var notification getNotificationsResponse
-			err = h.DB.GetContext(ctx, &notification, `
+			err := h.DB.GetContext(ctx, &notification, `
     SELECT n.id, n.posting_window_id, w.region, n.created_at
     FROM notifications n JOIN posting_windows w ON w.id = n.posting_window_id
     WHERE n.user_id = $1 AND n.created_at > $2 AND w.ended_at IS NULL
@@ -75,7 +82,9 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 			select {
 			case <-ctx.Done():
 				return nil
-			case <-ticker.C:
+			case <-subscription.done:
+				return nil
+			case <-subscription.wake:
 			}
 		}
 	}
