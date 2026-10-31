@@ -64,12 +64,14 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 
 		// 削除状態を毎回確認する。即時反映も5秒以内の許容範囲に含まれる。
 		var object struct {
-			Data      []byte `db:"data"`
-			MediaType string `db:"media_type"`
+			Generation string    `db:"generation"`
+			CreatedAt  time.Time `db:"created_at"`
+			MediaType  string    `db:"media_type"`
 		}
 		err = h.DB.GetContext(ctx, &object, `
-   SELECT i.data, i.media_type
+   SELECT i.media_type, i.created_at, b.generation::text AS generation
    FROM image_objects i JOIN users u ON u.id = i.owner_user_id AND u.status = 'active'
+   CROSS JOIN image_cache_generation b
    WHERE i.id = $1 AND (
      u.profile_image_id = i.id
      OR EXISTS (
@@ -93,6 +95,23 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		if exp <= time.Now().Unix() {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
-		return c.Blob(http.StatusOK, object.MediaType, object.Data)
+		cacheKey := imageCacheKey(object.Generation, input.ImageID, object.CreatedAt)
+		uri, err := localImageCache.ensure(ctx, h.Config.ImageCacheDir, cacheKey, func() ([]byte, error) {
+			var data []byte
+			err := h.DB.GetContext(ctx, &data, `SELECT data FROM image_objects WHERE id=$1 AND created_at=$2`, input.ImageID, object.CreatedAt)
+			return data, err
+		})
+		if errors.Is(err, sql.ErrNoRows) {
+			return NewAPIError(http.StatusForbidden, "image_forbidden")
+		}
+		if err != nil {
+			return err
+		}
+		if exp <= time.Now().Unix() {
+			return NewAPIError(http.StatusForbidden, "image_forbidden")
+		}
+		c.Response().Header().Set("Content-Type", object.MediaType)
+		c.Response().Header().Set("X-Accel-Redirect", uri)
+		return c.NoContent(http.StatusOK)
 	}
 }

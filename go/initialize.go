@@ -1,6 +1,7 @@
 package isureal
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,13 +16,26 @@ type initializeResponse struct {
 	Model    string `json:"model"`
 }
 
-func initializeHandler(*HandlerContext) echo.HandlerFunc {
+func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		cmd := exec.Command("../sql/init.sh")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return err
+		}
+
+		// Invalidate file caches in every region through the shared database.
+		result, err := h.DB.ExecContext(c.Request().Context(), `UPDATE image_cache_generation SET generation = generation + 1 WHERE singleton = true`)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rows != 1 {
+			return fmt.Errorf("image cache generation is not initialized; apply deploy/image-cache.sql")
 		}
 
 		// Set language to the implementation language.
