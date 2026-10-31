@@ -8,7 +8,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const imageURLWarmupBudget = 15 * time.Second
+const imageURLWarmupBudget = 30 * time.Second
+const imageURLWarmupStageBudget = 12 * time.Second
 
 var imageURLWarmupQueries = []string{
 	`SELECT secret_key_hash, profile_image_id AS image_id FROM users
@@ -41,7 +42,7 @@ func warmImageURLs(ctx context.Context, db *sqlx.DB, cache *imageURLCache) int {
 			break
 		}
 		// Give each class time, even when a preceding class cannot finish.
-		stageCtx, stop := context.WithTimeout(ctx, 5*time.Second)
+		stageCtx, stop := context.WithTimeout(ctx, imageURLWarmupStageBudget)
 		count, err := warmImageURLQuery(stageCtx, db, cache, query)
 		stop()
 		total += count
