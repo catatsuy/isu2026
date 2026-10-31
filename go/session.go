@@ -32,7 +32,7 @@ func GetSession(c *echo.Context) *Session {
 	return sess
 }
 
-func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
+func getSessionFromHeader(c *echo.Context, db readDB) (*Session, error) {
 	authHeader := c.Request().Header.Get(echo.HeaderAuthorization)
 	if authHeader == "" {
 		return nil, nil
@@ -64,7 +64,13 @@ func getSessionFromHeader(c *echo.Context, db *sqlx.DB) (*Session, error) {
 func SessionMiddleware(handlerContext *HandlerContext, authRequired bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			session, err := getSessionFromHeader(c, handlerContext.DB)
+			if checked, _ := c.Get("primary_session_checked").(bool); checked {
+				if GetSession(c) == nil && authRequired {
+					return NewAPIError(http.StatusUnauthorized, "invalid_session")
+				}
+				return next(c)
+			}
+			session, err := getSessionFromHeader(c, handlerContext.WriteDB())
 			if err != nil {
 				return err
 			}
@@ -78,7 +84,9 @@ func SessionMiddleware(handlerContext *HandlerContext, authRequired bool) echo.M
 }
 
 func InvalidateLoginSession(db *sqlx.DB, userID string, tokenHash string) error {
-	tx, err := db.Beginx()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}

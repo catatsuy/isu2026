@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 )
 
@@ -28,7 +27,7 @@ type ipBan struct {
 	BannedUntil time.Time `db:"banned_until"`
 }
 
-func (l *IPBanList) Banned(ctx context.Context, db *sqlx.DB, ip string) (bool, error) {
+func (l *IPBanList) Banned(ctx context.Context, db readDB, ip string) (bool, error) {
 	snapshot := l.snapshot.Load()
 	if (snapshot == nil || time.Since(snapshot.loadedAt) >= ipBanReloadInterval) && l.reloading.TryLock() {
 		defer l.reloading.Unlock()
@@ -51,7 +50,7 @@ func (l *IPBanList) Banned(ctx context.Context, db *sqlx.DB, ip string) (bool, e
 	return ok && time.Now().Before(until), nil
 }
 
-func loadIPBans(ctx context.Context, db *sqlx.DB, previous *ipBanSnapshot) (*ipBanSnapshot, error) {
+func loadIPBans(ctx context.Context, db readDB, previous *ipBanSnapshot) (*ipBanSnapshot, error) {
 	var rows []ipBan
 	if err := db.SelectContext(ctx, &rows, `SELECT ip, banned_until FROM ip_bans WHERE banned_until > clock_timestamp()`); err != nil {
 		return nil, err
@@ -91,10 +90,22 @@ func IPBanMiddleware(h *HandlerContext) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
 			// Peer file requests authenticate with HMAC and never access application data.
-			if c.Path() == "/internal/image-files/:imageId" {
+			if c.Path() == "/internal/image-files/:imageId" || c.Path() == primaryRPCPath {
 				return next(c)
 			}
-			banned, err := h.IPBans.Banned(c.Request().Context(), h.DB, c.RealIP())
+			if h.PrimaryAPI != nil {
+				if err := h.authenticateViaAPI(c); err != nil {
+					return err
+				}
+				return next(c)
+			}
+			if combineSessionIPBan(h, c) {
+				if err := checkPrimarySessionAndBan(h, c); err != nil {
+					return err
+				}
+				return next(c)
+			}
+			banned, err := h.IPBans.Banned(c.Request().Context(), h.WriteDB(), c.RealIP())
 			if err != nil {
 				return err
 			}

@@ -91,7 +91,7 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		if err := h.ImageFiles.Save(ctx, imageID, imageData); err != nil {
 			return err
 		}
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -189,29 +189,28 @@ func getMyCurrentPostHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
-		var postID string
-		err := h.DB.GetContext(ctx, &postID, `
-   SELECT p.id FROM posts p
-   JOIN posting_windows w ON w.id = p.posting_window_id
-   JOIN users u ON u.id = p.author_id
-   JOIN posting_windows current ON current.region = u.region AND current.ended_at IS NULL
-                              AND current.local_date = w.local_date
-   WHERE p.author_id = $1 AND p.deleted_at IS NULL
-  `, userID)
+		postID, err := h.currentPostID(c)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "post_not_found")
 		}
 		if err != nil {
 			return err
 		}
-		post, err := getPost(ctx, h.DB, postID)
+		var post Post
+		if primaryScope(ctx) == nil {
+			post, err = getPost(ctx, h.ReadDB(c), postID)
+		} else {
+			var payload PostWithAuthor
+			payload, err = h.readPost(c, postID)
+			post = payload.Post
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "post_not_found")
 		}
 		if err != nil {
 			return err
 		}
-		user, err := getUser(ctx, h.DB, userID)
+		user, err := h.readUserPayload(c, userID)
 		if err != nil {
 			return err
 		}
@@ -232,20 +231,28 @@ func getPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		ctx := c.Request().Context()
-		post, err := getPostWithAuthor(ctx, h.DB, input.PostID)
+		post, err := h.readPost(c, input.PostID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "post_not_found")
 		}
 		if err != nil {
 			return err
 		}
-		viewer, err := loadViewerContext(ctx, h.DB, GetSession(c).UserID)
+		viewer, err := loadViewerContext(ctx, h.ReadDB(c), GetSession(c).UserID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
-		if err != nil || !viewer.canView(post.Post) {
+		if err != nil {
 			return NewAPIError(http.StatusNotFound, "post_not_found")
 		}
+		posts, err := h.authorizePosts(c, viewer, []PostWithAuthor{post}, "")
+		if err != nil {
+			return err
+		}
+		if len(posts) == 0 || !viewer.canView(posts[0].Post) {
+			return NewAPIError(http.StatusNotFound, "post_not_found")
+		}
+		post = posts[0]
 		return c.JSON(http.StatusOK, getPostResponse(newPostResponse(post.Post, post.Author)))
 	}
 }
@@ -279,7 +286,7 @@ func updatePostHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -342,7 +349,7 @@ func deletePostHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

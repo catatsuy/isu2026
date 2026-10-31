@@ -19,12 +19,12 @@ func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
-		author, err := getUser(ctx, h.DB, userID)
+		author, err := h.readUserPayload(c, userID)
 		if err != nil {
 			return err
 		}
 		var posts []Post
-		if err := h.DB.SelectContext(ctx, &posts, `
+		if err := h.ReadDB(c).SelectContext(ctx, &posts, `
    SELECT `+postColumns+`
    FROM posts p
    JOIN posting_windows w ON w.id = p.posting_window_id
@@ -34,6 +34,20 @@ func exportPostsHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 
+		if scope := primaryScope(ctx); scope != nil && scope.local {
+			payloads := make([]PostWithAuthor, len(posts))
+			for i, post := range posts {
+				payloads[i] = PostWithAuthor{Post: post, Author: author}
+			}
+			payloads, err = scope.approvePosts(ctx, viewerContext{User: User{ID: userID}}, payloads, "")
+			if err != nil {
+				return err
+			}
+			posts = posts[:0]
+			for _, p := range payloads {
+				posts = append(posts, p.Post)
+			}
+		}
 		var body bytes.Buffer
 		writer := zip.NewWriter(&body)
 		defer writer.Close()

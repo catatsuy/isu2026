@@ -47,7 +47,7 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_pagination")
 		}
 		ctx := c.Request().Context()
-		viewer, err := loadViewerPostingContext(ctx, h.DB, GetSession(c).UserID)
+		viewer, err := loadViewerPostingContext(ctx, h.ReadDB(c), GetSession(c).UserID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
 		}
@@ -57,16 +57,20 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 		if !viewer.HasPostedToday {
 			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
 		}
-		if viewer, err = loadViewerRelationships(ctx, h.DB, viewer); err != nil {
+		if viewer, err = loadViewerRelationships(ctx, h.ReadDB(c), viewer); err != nil {
 			return err
 		}
-		candidates, err := selectFeedPosts(ctx, h.DB, viewer, input)
+		candidates, err := selectFeedPosts(ctx, h.ReadDB(c), viewer, input)
+		if err != nil {
+			return err
+		}
+		candidates, err = h.authorizePosts(c, viewer, candidates, input.Feed)
 		if err != nil {
 			return err
 		}
 		var scores map[string]int64
 		if ranked {
-			if scores, err = recommendationScores(ctx, h.DB, viewer, candidates); err != nil {
+			if scores, err = recommendationScores(ctx, h.ReadDB(c), viewer, candidates); err != nil {
 				return err
 			}
 		}

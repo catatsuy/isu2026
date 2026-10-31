@@ -16,7 +16,7 @@ func certifyUserHandler(h *HandlerContext) echo.HandlerFunc {
 		if err := c.Bind(&input); err != nil {
 			return err
 		}
-		result, err := h.DB.ExecContext(c.Request().Context(), `UPDATE users SET account_type='certified_public', updated_at=clock_timestamp() WHERE id=$1 AND status='active' AND account_type='regular'`, input.UserID)
+		result, err := h.WriteDB().ExecContext(c.Request().Context(), `UPDATE users SET account_type='certified_public', updated_at=clock_timestamp() WHERE id=$1 AND status='active' AND account_type='regular'`, input.UserID)
 		if err != nil {
 			return err
 		}

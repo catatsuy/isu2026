@@ -1,0 +1,8 @@
+reboot isu04
+recovered isu04 boot_id_changed=true
+reboot isu02
+recovered isu02 boot_id_changed=true
+reboot isu03
+recovered isu03 boot_id_changed=true
+reboot isu01
+recovered isu01 boot_id_changed=true

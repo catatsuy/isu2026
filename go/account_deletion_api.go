@@ -12,7 +12,7 @@ func deleteAccountHandler(h *HandlerContext) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

@@ -44,7 +44,7 @@ func getMemoriesHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_memory_period")
 		}
-		response, err := listMemories(c.Request().Context(), h.DB, GetSession(c).UserID, start, start.AddDate(0, 1, 0), input.BeforePostedAt, input.BeforeID)
+		response, err := listMemories(c.Request().Context(), h.ReadDB(c), GetSession(c).UserID, start, start.AddDate(0, 1, 0), input.BeforePostedAt, input.BeforeID)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func getMemoriesByDateHandler(h *HandlerContext) echo.HandlerFunc {
 		if err != nil {
 			return NewAPIError(http.StatusBadRequest, "invalid_memory_period")
 		}
-		response, err := listMemories(c.Request().Context(), h.DB, GetSession(c).UserID, start, start.AddDate(0, 0, 1), input.BeforePostedAt, input.BeforeID)
+		response, err := listMemories(c.Request().Context(), h.ReadDB(c), GetSession(c).UserID, start, start.AddDate(0, 0, 1), input.BeforePostedAt, input.BeforeID)
 		if err != nil {
 			return err
 		}
@@ -83,6 +83,15 @@ func listMemories(ctx context.Context, db sqlx.QueryerContext, userID string, st
 	if err != nil {
 		return response, err
 	}
+	if scope := primaryScope(ctx); scope != nil && scope.local && scope.api != nil {
+		return memoriesViaAPI(ctx, scope, db, posts)
+	}
+	if scope := primaryScope(ctx); scope != nil && scope.local {
+		posts, err = authorizePostPayloads(ctx, scope.primary, viewerContext{User: User{ID: userID}}, posts, "")
+		if err != nil {
+			return response, err
+		}
+	}
 	items := make([]memoryPostResponse, 0, len(posts))
 	for _, post := range posts {
 		items = append(items, memoryPostResponse{
@@ -97,6 +106,11 @@ func listMemories(ctx context.Context, db sqlx.QueryerContext, userID string, st
 	}
 	if err := loadMemoryInteractions(ctx, db, items); err != nil {
 		return response, err
+	}
+	if scope := primaryScope(ctx); scope != nil && scope.local {
+		if err := filterMemoryInteractions(ctx, scope.primary, items); err != nil {
+			return response, err
+		}
 	}
 	response.Items = items
 	return response, nil

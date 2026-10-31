@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/tmp/replica-consistency.py", line 39, in <module>
+    assert current['window'] is not None and current['canPost'],current
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'window': None, 'hasPosted': False, 'canPost': False, 'deletionCount': 0}

@@ -38,14 +38,14 @@ func createCommentHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		post, err := getPost(ctx, h.DB, input.PostID)
+		post, err := getPost(ctx, h.WriteDB(), input.PostID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
 		if err != nil {
 			return err
 		}
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -103,16 +103,33 @@ func getCommentsHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_pagination")
 		}
 		ctx := c.Request().Context()
-		allowed, err := canComment(ctx, h.DB, GetSession(c).UserID, input.PostID)
+		allowed, err := h.canCommentRead(c, input.PostID)
 		if err != nil {
 			return err
 		}
 		if !allowed {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
-		comments, err := selectCommentsWithAuthor(ctx, h.DB, `AND c.post_id=$1 AND ($2::timestamptz IS NULL OR (c.created_at,c.id)>($2,$3)) ORDER BY c.created_at,c.id LIMIT 51`, input.PostID, input.AfterCreatedAt, input.AfterID)
+		comments, err := selectCommentsWithAuthor(ctx, h.ReadDB(c), `AND c.post_id=$1 AND ($2::timestamptz IS NULL OR (c.created_at,c.id)>($2,$3)) ORDER BY c.created_at,c.id LIMIT 51`, input.PostID, input.AfterCreatedAt, input.AfterID)
 		if err != nil {
 			return err
+		}
+		if local, _ := c.Get("usingReplica").(bool); local && len(comments) > 0 {
+			ids := make([]string, len(comments))
+			for i, v := range comments {
+				ids[i] = v.ID
+			}
+			active, err := h.activeReadIDs(c, ids, nil)
+			if err != nil {
+				return err
+			}
+			filtered := comments[:0]
+			for _, v := range comments {
+				if active[v.ID] {
+					filtered = append(filtered, v)
+				}
+			}
+			comments = filtered
 		}
 		items := make([]createCommentResponse, 0, len(comments))
 		for _, comment := range comments {
@@ -138,7 +155,7 @@ func deleteCommentHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

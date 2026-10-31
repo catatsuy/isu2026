@@ -13,7 +13,7 @@ ISUREAL_DB_USER=${ISUREAL_DB_USER:-isureal}
 ISUREAL_DB_PASSWORD=${ISUREAL_DB_PASSWORD:-isureal}
 ISUREAL_DB_NAME=${ISUREAL_DB_NAME:-isureal}
 
-PGPASSWORD="$ISUREAL_DB_PASSWORD" psql \
+PGAPPNAME=isureal-initialize PGOPTIONS="-c statement_timeout=45000" PGPASSWORD="$ISUREAL_DB_PASSWORD" exec psql \
 	--no-psqlrc \
 	--no-password \
 	--host="$ISUREAL_DB_HOST" \
