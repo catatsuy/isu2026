@@ -41,19 +41,20 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		var secretKeyHash string
-		err = h.DB.GetContext(ctx, &secretKeyHash, `
-   SELECT u.secret_key_hash
-   FROM image_objects i JOIN users u ON u.id = i.owner_user_id
-   WHERE i.id = $1 AND u.status = 'active'
-  `, input.ImageID)
+		var object struct {
+			SecretKeyHash string `db:"secret_key_hash"`
+			MediaType     string `db:"media_type"`
+			Visible       bool   `db:"visible"`
+		}
+		checkedAt := time.Now()
+		err = h.DB.GetContext(ctx, &object, imageAccessQuery, input.ImageID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
 		if err != nil {
 			return err
 		}
-		key, err := imageSigningKey(secretKeyHash)
+		key, err := imageSigningKey(object.SecretKeyHash)
 		if err != nil {
 			return err
 		}
@@ -62,34 +63,8 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
 
-		// 削除状態を毎回確認する。即時反映も5秒以内の許容範囲に含まれる。
-		var object struct {
-			MediaType string `db:"media_type"`
-		}
-		const visibilityQuery = `
-   SELECT i.media_type
-   FROM image_objects i JOIN users u ON u.id = i.owner_user_id AND u.status = 'active'
-   WHERE i.id = $1 AND (
-     u.profile_image_id = i.id
-     OR EXISTS (
-       SELECT 1 FROM posts p
-       WHERE p.image_id = i.id AND p.author_id = u.id AND p.deleted_at IS NULL
-     )
-     OR EXISTS (
-       SELECT 1 FROM realmojis r
-       JOIN posts p ON p.id = r.post_id AND p.deleted_at IS NULL
-       JOIN users author ON author.id = p.author_id AND author.status = 'active'
-       WHERE r.image_id = i.id AND r.reactor_id = u.id AND r.replaced_at IS NULL AND r.deleted_at IS NULL
-     )
-   )
-  `
-		checkedAt := time.Now()
-		err = h.DB.GetContext(ctx, &object, visibilityQuery, input.ImageID)
-		if errors.Is(err, sql.ErrNoRows) {
+		if !object.Visible {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
-		}
-		if err != nil {
-			return err
 		}
 		if exp <= time.Now().Unix() {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
@@ -101,10 +76,13 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 
 		// A slow replica fetch must not extend the deletion grace period.
 		if time.Since(checkedAt) >= time.Second {
-			if err := h.DB.GetContext(ctx, &object, visibilityQuery, input.ImageID); errors.Is(err, sql.ErrNoRows) {
+			if err := h.DB.GetContext(ctx, &object, imageAccessQuery, input.ImageID); errors.Is(err, sql.ErrNoRows) {
 				return NewAPIError(http.StatusForbidden, "image_forbidden")
 			} else if err != nil {
 				return err
+			}
+			if !object.Visible {
+				return NewAPIError(http.StatusForbidden, "image_forbidden")
 			}
 		}
 
@@ -116,3 +94,27 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		return c.NoContent(http.StatusOK)
 	}
 }
+
+// Read the owner once. CASE short-circuits profile/post images before the
+// RealMoji lookup. Owner predicates also allow searches through owner indexes;
+// all deletion and active-account checks remain part of the same snapshot.
+const imageAccessQuery = `
+ SELECT i.media_type, u.secret_key_hash,
+   CASE
+     WHEN u.profile_image_id = i.id THEN true
+     WHEN EXISTS (
+       SELECT 1 FROM posts p
+       WHERE p.author_id = u.id AND p.image_id = i.id AND p.deleted_at IS NULL
+     ) THEN true
+     ELSE EXISTS (
+       SELECT 1 FROM realmojis r
+       JOIN posts p ON p.id = r.post_id AND p.deleted_at IS NULL
+       JOIN users author ON author.id = p.author_id AND author.status = 'active'
+       WHERE r.reactor_id = u.id AND r.image_id = i.id
+         AND r.replaced_at IS NULL AND r.deleted_at IS NULL
+     )
+   END AS visible
+ FROM image_objects i
+ JOIN users u ON u.id = i.owner_user_id AND u.status = 'active'
+ WHERE i.id = $1
+`

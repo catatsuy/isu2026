@@ -32,6 +32,12 @@ func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
+		// Persist immutable bytes and a durable replica before taking DB locks.
+		// Failed transactions may leave unreferenced files, which are never public.
+		imageID := uuid.NewString()
+		if err := h.ImageFiles.Save(ctx, imageID, data); err != nil {
+			return err
+		}
 		tx, err := h.DB.BeginTxx(ctx, nil)
 		if err != nil {
 			return err
@@ -42,10 +48,6 @@ func putProfileImageHandler(h *HandlerContext) echo.HandlerFunc {
 			if errors.Is(err, sql.ErrNoRows) {
 				return NewAPIError(http.StatusNotFound, "account_not_found")
 			}
-			return err
-		}
-		imageID := uuid.NewString()
-		if err := h.ImageFiles.Save(ctx, imageID, data); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES ($1,$2,$3,'image/jpeg')`, imageID, userID, nil); err != nil {

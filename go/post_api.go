@@ -86,6 +86,12 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 		userID := GetSession(c).UserID
+		// Persist immutable bytes and a durable replica before taking DB locks.
+		// Failed transactions may leave unreferenced files, which are never public.
+		imageID := uuid.NewString()
+		if err := h.ImageFiles.Save(ctx, imageID, imageData); err != nil {
+			return err
+		}
 		tx, err := h.DB.BeginTxx(ctx, nil)
 		if err != nil {
 			return err
@@ -104,9 +110,11 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			LocalDate time.Time `db:"local_date"`
 			StartsAt  time.Time `db:"starts_at"`
 		}
-		err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR UPDATE`, user.Region)
+		// Concurrent authors may share this lock; ending the window must wait
+		// for their commits. The user lock still serializes slot/count changes.
+		err = tx.GetContext(ctx, &window, activePostingWindowQuery, user.Region)
 		if errors.Is(err, sql.ErrNoRows) {
-			err = tx.GetContext(ctx, &window, `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR UPDATE`, user.Region)
+			err = tx.GetContext(ctx, &window, activePostingWindowQuery, user.Region)
 		}
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -129,10 +137,6 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		postedAt := time.Now().UTC()
 		if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
 			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
-		}
-		imageID := uuid.NewString()
-		if err := h.ImageFiles.Save(ctx, imageID, imageData); err != nil {
-			return err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, nil, postedAt); err != nil {
 			return err
@@ -376,3 +380,5 @@ func deletePostHandler(h *HandlerContext) echo.HandlerFunc {
 		return c.NoContent(http.StatusNoContent)
 	}
 }
+
+const activePostingWindowQuery = `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE`
