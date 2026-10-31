@@ -37,11 +37,6 @@ func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 
-		if h.Config.ReplicaName != "" || h.Config.ReplicaHost != "" || envOrDefault("ISUREAL_WAIT_REPLICAS", "") == "true" {
-			if err := waitForReplicas(ctx, h.WriteDB()); err != nil {
-				return err
-			}
-		}
 		log.Printf("initialize total=%s", time.Since(started))
 		// Image bytes are immutable. DB authorization controls visibility after reset.
 

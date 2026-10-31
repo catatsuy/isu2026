@@ -145,3 +145,44 @@ func TestPrimaryRPCRejectsUnsignedResponses(t *testing.T) {
 		t.Fatal("unauthenticated response accepted")
 	}
 }
+
+// Even a healthy standby can omit a newly committed post without a SQL error.
+func TestAsiaForwardReadsIgnoresHealthyReplica(t *testing.T) {
+	for _, region := range []string{"europe", "america"} {
+		t.Run(region, func(t *testing.T) {
+			token := bytes.Repeat([]byte("k"), 32)
+			asia := echo.New()
+			asia.HTTPErrorHandler = APIErrorHandler
+			asia.Use(AsiaRoutingMiddleware(&HandlerContext{Config: &Config{Region: "asia"}, ImageFiles: &ImageFileStore{token: token}}))
+			paths := []string{"/api/feeds/friends", "/api/images/image", "/api/me", "/api/notifications"}
+			for _, path := range paths {
+				asia.GET(path, func(c *echo.Context) error {
+					if forwardedRegion(c, &Config{Region: "asia"}) != region {
+						t.Error("original region lost")
+					}
+					return c.String(200, "asia:"+c.Request().URL.RequestURI())
+				})
+			}
+			backend := httptest.NewServer(asia)
+			defer backend.Close()
+			client, err := newPrimaryAPIClient(backend.URL, region, token)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.client.CloseIdleConnections()
+			replica := &replicaRouter{}
+			replica.healthyAt.Store(time.Now().UnixNano())
+			foreign := echo.New()
+			foreign.HTTPErrorHandler = APIErrorHandler
+			foreign.Use(AsiaRoutingMiddleware(&HandlerContext{Config: &Config{Region: region}, PrimaryAPI: client, Replication: replica}))
+			for _, path := range paths {
+				foreign.GET(path, func(c *echo.Context) error { t.Fatal("overseas handler executed"); return nil })
+				res := httptest.NewRecorder()
+				foreign.ServeHTTP(res, httptest.NewRequest("GET", path+"?limit=10", nil))
+				if res.Code != 200 || res.Body.String() != "asia:"+path+"?limit=10" {
+					t.Fatalf("%s: status=%d body=%s", path, res.Code, res.Body)
+				}
+			}
+		})
+	}
+}

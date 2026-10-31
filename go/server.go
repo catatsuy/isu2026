@@ -36,6 +36,9 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	if !validRegion(config.Region) {
 		panic("invalid server region: " + config.Region)
 	}
+	if config.Region != "asia" && config.PrimaryAPIURL == "" {
+		panic("ISUREAL_PRIMARY_API_URL is required outside asia")
+	}
 	var primaryAPI *primaryAPIClient
 	if config.PrimaryAPIURL != "" {
 		token, err := os.ReadFile(config.ImageTokenFile)
@@ -54,21 +57,25 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	e.Use(middleware.Recover())
 	e.HTTPErrorHandler = APIErrorHandler
 
-	db, err := sqlx.Open("pgx", config.DatabaseDSN())
-	if err != nil {
-		panic("failed to open database: " + err.Error())
+	var db *sqlx.DB
+	if primaryAPI == nil {
+		var err error
+		db, err = sqlx.Open("pgx", config.DatabaseDSN())
+		if err != nil {
+			panic("failed to open database: " + err.Error())
+		}
+		maxConns := config.DBMaxOpenConns
+		if maxConns == 0 {
+			maxConns = 25
+		}
+		if maxConns < 0 {
+			panic("DBMaxOpenConns must be a positive integer")
+		}
+		db.SetMaxOpenConns(maxConns)
+		db.SetMaxIdleConns(maxConns)
+		db.SetConnMaxLifetime(3 * time.Minute)
+		db.SetConnMaxIdleTime(2 * time.Minute)
 	}
-	maxConns := config.DBMaxOpenConns
-	if maxConns == 0 {
-		maxConns = 25
-	}
-	if maxConns < 0 {
-		panic("DBMaxOpenConns must be a positive integer")
-	}
-	db.SetMaxOpenConns(maxConns)
-	db.SetMaxIdleConns(maxConns)
-	db.SetConnMaxLifetime(3 * time.Minute)
-	db.SetConnMaxIdleTime(2 * time.Minute)
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		var err error
@@ -98,12 +105,7 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 		ImageFiles:    imageFiles,
 		Notifications: newNotificationHub(db),
 	}
-	replication, stopReplication := newReplicaRouter(config, db, primaryAPI)
 	handlerContext.PrimaryDB = db
-	handlerContext.Replication = replication
-	if replication != nil {
-		handlerContext.ReplicaDB = replication.replica
-	}
 	e.Use(AsiaRoutingMiddleware(handlerContext))
 	if config.Region != "asia" {
 		e.Use(WriteDeadlineMiddleware)
@@ -158,11 +160,12 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	e.POST("/api/admin/posting-window", openPostingWindowHandler(handlerContext), AdminSessionMiddleware(handlerContext, true))
 
 	return e, func() {
-		stopReplication()
 		if primaryAPI != nil {
 			primaryAPI.client.CloseIdleConnections()
 		}
 		imageFiles.Close()
-		db.Close()
+		if db != nil {
+			db.Close()
+		}
 	}
 }

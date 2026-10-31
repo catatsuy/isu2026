@@ -60,4 +60,4 @@ nginxの画像配信やDB整合性の検証、ベンチマークの代用には�
 
 PostgreSQLの読み取りReplicaについては[read-replicas.md](read-replicas.md)を参照してください。
 最新構成は[asia-api.md](asia-api.md)を参照してください。
-海外の主要データ取得はローカルReplica、認証・現在の権限はPrimaryです。initializeは両Replicaの追従を待ちます。
+海外の全 API は asia へ転送し、DB 参照・更新を asia に集約します。海外 PostgreSQL Replica は停止済みで、initialize は Replica を待ちません。

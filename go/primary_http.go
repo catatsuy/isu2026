@@ -255,16 +255,7 @@ func AsiaRoutingMiddleware(h *HandlerContext) echo.MiddlewareFunc {
 				return next(c)
 			}
 			if h.PrimaryAPI != nil && strings.HasPrefix(req.URL.Path, "/api/") {
-				if req.Method != http.MethodGet && req.Method != http.MethodHead {
-					return h.PrimaryAPI.forward(c)
-				}
-				if !replicaDataRoute(c.Path()) && c.Path() != "/api/images/:imageId" {
-					return h.PrimaryAPI.forward(c)
-				}
-				r := h.Replication
-				if r == nil || time.Since(time.Unix(0, r.healthyAt.Load())) >= 2*time.Second {
-					return h.PrimaryAPI.forward(c)
-				}
+				return h.PrimaryAPI.forward(c)
 			}
 			return next(c)
 		}
