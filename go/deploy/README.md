@@ -1,5 +1,13 @@
 # アプリケーションのデプロイ
 
+GoアプリのPostgreSQL接続プールはプロセスごとに最大25接続です。
+pgxは `default_query_exec_mode=exec` で実行し、prepared statementの自動作成・キャッシュを使用しません。
+アプリの環境変数 `DB_MAXOPENCONNS` に正の整数を設定すると変更できます。
+idle接続の上限も同じ値で、接続寿命は3分、idle接続の寿命は2分です。
+複数プロセスで動かす場合は、合計接続数とPostgreSQL側の上限を考慮して調整してください。
+起動時はDBへの接続に成功するまで待機します。接続確認は5秒でタイムアウトし、
+失敗後2秒待って再試行します。HTTPの受付は接続成功後に開始します。
+
 ```sh
 bash deploy.sh isu01 isu02 isu03
 ```

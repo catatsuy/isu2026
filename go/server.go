@@ -1,7 +1,10 @@
 package isureal
 
 import (
+	"context"
+	"log"
 	"os"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
@@ -33,11 +36,28 @@ func NewServer(config *Config) *echo.Echo {
 	if err != nil {
 		panic("failed to open database: " + err.Error())
 	}
-	db.SetMaxOpenConns(30)
-	err = db.Ping()
-	if err != nil {
-		panic("failed to ping database: " + err.Error())
+	maxConns := config.DBMaxOpenConns
+	if maxConns == 0 {
+		maxConns = 25
 	}
+	if maxConns < 0 {
+		panic("DBMaxOpenConns must be a positive integer")
+	}
+	db.SetMaxOpenConns(maxConns)
+	db.SetMaxIdleConns(maxConns)
+	db.SetConnMaxLifetime(3 * time.Minute)
+	db.SetConnMaxIdleTime(2 * time.Minute)
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := db.PingContext(ctx)
+		cancel()
+		if err == nil {
+			break
+		}
+		log.Printf("waiting for database: %v", err)
+		time.Sleep(2 * time.Second)
+	}
+	log.Print("DB ready!")
 
 	imageFiles, err := NewImageFileStore(config)
 	if err != nil {
