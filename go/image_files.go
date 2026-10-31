@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -246,11 +245,9 @@ func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error
 	if err := s.startReplication(); err != nil {
 		return err
 	}
-	started := time.Now()
 	if err := WriteImageFile(s.Root, id, data, true); err != nil {
 		return err
 	}
-	localTime := time.Since(started)
 	// Persist the queue entry before success (and before callers commit DB metadata).
 	// A crash before this point may leave an unreferenced local image, but cannot
 	// lose replication work for an acknowledged Save.
@@ -261,7 +258,6 @@ func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error
 	if err != nil {
 		return err
 	}
-	log.Printf("image_upload phase=save image_id=%s bytes=%d local_fsync_us=%d job_fsync_us=%d", id, len(data), localTime.Microseconds(), (time.Since(started) - localTime).Microseconds())
 	s.markReplicationShard(ImageFilePath(s.jobRoot(), id))
 	return nil
 }

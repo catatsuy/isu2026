@@ -194,7 +194,6 @@ func (s *ImageFileStore) replicationJobLock(name string) *sync.Mutex {
 
 func (s *ImageFileStore) replicateJob(ctx context.Context, name string) {
 	retryName := filepath.Join(filepath.Dir(name), ".retry-"+filepath.Base(name))
-	info, _ := os.Stat(name)
 	err := s.replicateAttempt(ctx, name)
 	lock := s.replicationJobLock(name)
 	lock.Lock()
@@ -206,9 +205,6 @@ func (s *ImageFileStore) replicateJob(ctx context.Context, name string) {
 		}
 	}()
 	if err == nil {
-		if info != nil {
-			log.Printf("image_upload phase=replicated job=%s duration_us=%d", filepath.Base(name), time.Since(info.ModTime()).Microseconds())
-		}
 		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
 			log.Printf("image replication remove %s: %v", name, err)
 			fallback = time.Second

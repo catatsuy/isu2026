@@ -44,3 +44,26 @@ func TestActionLogErrorDefault(t *testing.T) {
 		}
 	}
 }
+
+func TestActionLogOffPreservesResponses(t *testing.T) {
+	for _, status := range []int{200, 400, 403, 500} {
+		var output bytes.Buffer
+		e := echo.New()
+		e.HTTPErrorHandler = APIErrorHandler
+		e.Use(ActionLogMiddleware("off", &output))
+		e.GET("/api/me", func(c *echo.Context) error {
+			if c.Get("action_log") != nil {
+				t.Error("disabled middleware ran")
+			}
+			if status >= 400 {
+				return NewAPIError(status, "test_error")
+			}
+			return c.NoContent(status)
+		})
+		response := httptest.NewRecorder()
+		e.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/me", nil))
+		if response.Code != status || output.Len() != 0 {
+			t.Fatalf("status=%d want=%d output=%s", response.Code, status, output.String())
+		}
+	}
+}

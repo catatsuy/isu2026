@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/base64"
-	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -23,12 +22,6 @@ func (h *HandlerContext) authenticateViaAPI(c *echo.Context) error {
 		input.ID = c.Param("postId")
 	} else {
 		input.ID = c.Param("userId")
-	}
-	started := time.Now()
-	if localImageUpload(c) {
-		defer func() {
-			log.Printf("image_upload phase=preauth route=%s duration_us=%d", route, time.Since(started).Microseconds())
-		}()
 	}
 	var authorization primaryReadAuthorization
 	if err := h.callPrimary(c, input, &authorization); err != nil {

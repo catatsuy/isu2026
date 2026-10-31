@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -272,9 +271,6 @@ func forwardedRegion(c *echo.Context, config *Config) string {
 
 func (p *primaryAPIClient) call(ctx context.Context, auth, ip string, input primaryRPCRequest, output any) error {
 	body, err := json.Marshal(input)
-	if input.Op == "image_upload" {
-		log.Printf("image_upload phase=rpc region=%s bytes=%d", p.region, len(body))
-	}
 	if err != nil {
 		return err
 	}
