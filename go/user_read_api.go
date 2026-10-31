@@ -24,6 +24,16 @@ type searchUsersResponse struct {
 }
 
 func normalizeSearchText(value string) string {
+	ascii := true
+	for i := 0; i < len(value); i++ {
+		if value[i] >= 128 {
+			ascii = false
+			break
+		}
+	}
+	if ascii {
+		return strings.ToLower(value)
+	}
 	return norm.NFC.String(cases.Fold().String(norm.NFC.String(value)))
 }
 
@@ -41,10 +51,16 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		viewer := GetSession(c).UserID
-		blocked, err := getBlockedUserIDs(ctx, h.DB, viewer)
-		if err != nil {
-			return err
+		local, _ := c.Get("usingReplica").(bool)
+		blocked := map[string]bool{}
+		if !local {
+			var err error
+			blocked, err = getBlockedUserIDs(ctx, h.WriteDB(), viewer)
+			if err != nil {
+				return err
+			}
 		}
+
 		query := normalizeSearchText(input.Q)
 		items := make([]relationshipUserResponse, 0)
 		// Grow batches for sparse matches while keeping memory and each SQL
@@ -53,16 +69,42 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		beforeUsername, beforeID := input.BeforeUsername, input.BeforeID
 		for len(items) < 51 {
 			var users []User
-			if err := h.DB.SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3)) ORDER BY username, id LIMIT $4`, viewer, beforeUsername, beforeID, batchSize); err != nil {
+			if err := h.ReadDB(c).SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3)) ORDER BY username, id LIMIT $4`, viewer, beforeUsername, beforeID, batchSize); err != nil {
 				return err
 			}
+			var permissionStates map[string]userPermissionState
+			if local {
+				ids := []string{}
+				for _, user := range users {
+					if strings.Contains(normalizeSearchText(user.Username), query) || strings.Contains(normalizeSearchText(user.DisplayName), query) {
+						ids = append(ids, user.ID)
+					}
+				}
+				if len(ids) > 0 {
+					var err error
+					permissionStates, err = h.userPermissions(c, ids)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			for _, user := range users {
-				if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
-					continue
+				if local {
+					state, ok := permissionStates[user.ID]
+					if !ok || state.Blocked {
+						continue
+					}
+					user.AccountType = state.AccountType
+				} else {
+					if blocked[user.ID] {
+						continue
+					}
+					if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
+						continue
+					}
 				}
-				if blocked[user.ID] {
-					continue
-				}
+
 				if err := user.setImageKey(); err != nil {
 					return err
 				}
@@ -85,6 +127,18 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		if hasMore {
 			items = items[:50]
 		}
+		if local && h.PrimaryAPI != nil {
+			exact := false
+			for _, item := range items {
+				if strings.EqualFold(item.Username, input.Q) {
+					exact = true
+					break
+				}
+			}
+			if len(items) == 0 || (!exact && len(input.Q) >= 8 && usernamePattern.MatchString(input.Q)) {
+				return h.PrimaryAPI.forward(c)
+			}
+		}
 		return c.JSON(http.StatusOK, searchUsersResponse{Items: items, HasMore: hasMore})
 	}
 }
@@ -103,27 +157,43 @@ func getUserHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		viewer := GetSession(c).UserID
-		user, err := getUser(ctx, h.DB, input.UserID)
+		user, err := h.readUserPayload(c, input.UserID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "relationship_not_found")
 		}
 		if err != nil {
 			return err
 		}
-		blocked, err := isBlocked(ctx, h.DB, viewer, user.ID)
-		if err != nil {
-			return err
+		if local, _ := c.Get("usingReplica").(bool); local {
+			states, err := h.userPermissions(c, []string{user.ID})
+			if err != nil {
+				return err
+			}
+			state, ok := states[user.ID]
+			if !ok || state.Blocked {
+				return NewAPIError(http.StatusNotFound, "relationship_not_found")
+			}
+			user.AccountType = state.AccountType
+			if user.AccountType != "certified_public" && !state.Friend {
+				user.Bio = ""
+			}
+		} else {
+			blocked, err := isBlocked(ctx, h.WriteDB(), viewer, user.ID)
+			if err != nil {
+				return err
+			}
+			if blocked {
+				return NewAPIError(http.StatusNotFound, "relationship_not_found")
+			}
+			friends, err := getFriendIDs(ctx, h.WriteDB(), viewer)
+			if err != nil {
+				return err
+			}
+			if user.AccountType != "certified_public" && !slices.Contains(friends, user.ID) {
+				user.Bio = ""
+			}
 		}
-		if blocked {
-			return NewAPIError(http.StatusNotFound, "relationship_not_found")
-		}
-		friends, err := getFriendIDs(ctx, h.DB, viewer)
-		if err != nil {
-			return err
-		}
-		if user.AccountType != "certified_public" && !slices.Contains(friends, user.ID) {
-			user.Bio = ""
-		}
+
 		return c.JSON(http.StatusOK, getUserResponse(newRelationshipUserResponse(user)))
 	}
 }

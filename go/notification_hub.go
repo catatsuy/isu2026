@@ -105,14 +105,19 @@ func (h *notificationHub) run(ctx context.Context) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	previous := make(map[string]string)
+	var snapshot []*notificationSubscription
+	var ids []string
+	seen := make(map[string]bool)
 	for {
 		if ctx.Err() != nil {
 			return
 		}
 		h.mu.Lock()
-		snapshot := make([]*notificationSubscription, 0, len(h.subscribers))
-		ids := make([]string, 0, len(h.subscribers))
-		seen := make(map[string]bool)
+		clear(snapshot)
+		snapshot = snapshot[:0]
+		clear(ids)
+		ids = ids[:0]
+		clear(seen)
 		for s := range h.subscribers {
 			snapshot = append(snapshot, s)
 			if !seen[s.userID] {

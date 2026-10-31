@@ -1,0 +1,8 @@
+{
+  "fallback_get_status": 200,
+  "get_before_ms": 832.854473999987,
+  "write_status": 200,
+  "write_timeout_seconds": 0.810283916000003,
+  "get_after_ms": 707.728679000013,
+  "write_outcome": "committed on Primary while replica was stopped"
+}

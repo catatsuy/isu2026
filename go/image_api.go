@@ -41,13 +41,8 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		var object struct {
-			SecretKeyHash string `db:"secret_key_hash"`
-			MediaType     string `db:"media_type"`
-			Visible       bool   `db:"visible"`
-		}
 		checkedAt := time.Now()
-		err = h.DB.GetContext(ctx, &object, imageAccessQuery, input.ImageID)
+		object, err := h.imageAuthorization(c, input.ImageID, false)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
@@ -76,7 +71,7 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 
 		// A slow replica fetch must not extend the deletion grace period.
 		if time.Since(checkedAt) >= time.Second {
-			if err := h.DB.GetContext(ctx, &object, imageAccessQuery, input.ImageID); errors.Is(err, sql.ErrNoRows) {
+			if object, err = h.imageAuthorization(c, input.ImageID, true); errors.Is(err, sql.ErrNoRows) {
 				return NewAPIError(http.StatusForbidden, "image_forbidden")
 			} else if err != nil {
 				return err

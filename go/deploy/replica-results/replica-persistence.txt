@@ -1,0 +1,32 @@
+isu04
+ persisted_probe_commits
+-------------------------
+                      90
+(1 row)
+
+ persisted_test_users
+----------------------
+                    6
+(1 row)
+
+isu02
+ persisted_probe_commits
+-------------------------
+                      90
+(1 row)
+
+ persisted_test_users
+----------------------
+                    6
+(1 row)
+
+isu03
+ persisted_probe_commits
+-------------------------
+                      90
+(1 row)
+
+ persisted_test_users
+----------------------
+                    6
+(1 row)

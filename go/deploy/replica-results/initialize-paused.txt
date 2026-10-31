@@ -1,0 +1,3 @@
+status=200 total_seconds=11.090302
+Oct 31 05:08:27 ip-192-168-1-10 isureal[3620]: 2026/10/31 05:08:27 initialize replica_wait=6.582046232s
+Oct 31 05:08:27 ip-192-168-1-10 isureal[3620]: 2026/10/31 05:08:27 initialize total=11.07348377s

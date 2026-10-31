@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"image/jpeg"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -51,7 +50,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer file.Close()
-		data, err := io.ReadAll(file)
+		data, err := readImagePart(file, input.Image)
 		if err != nil {
 			return err
 		}
@@ -65,7 +64,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		post, err := getPost(ctx, h.DB, input.PostID)
+		post, err := getPost(ctx, h.WriteDB(), input.PostID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
@@ -81,7 +80,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		if err := h.ImageFiles.Save(ctx, imageID, data); err != nil {
 			return err
 		}
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, post.AuthorID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, post.AuthorID)
 		if err != nil {
 			return err
 		}
@@ -139,16 +138,33 @@ func getRealMojisHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_pagination")
 		}
 		ctx := c.Request().Context()
-		allowed, err := canViewPost(ctx, h.DB, GetSession(c).UserID, input.PostID)
+		allowed, err := h.canViewPostRead(c, input.PostID)
 		if err != nil {
 			return err
 		}
 		if !allowed {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
-		reactions, err := selectCurrentRealMojis(ctx, h.DB, `AND r.post_id=$1 AND ($2::timestamptz IS NULL OR (r.created_at,r.id)<($2,$3)) ORDER BY r.created_at DESC,r.id DESC LIMIT 51`, input.PostID, input.BeforeCreatedAt, input.BeforeID)
+		reactions, err := selectCurrentRealMojis(ctx, h.ReadDB(c), `AND r.post_id=$1 AND ($2::timestamptz IS NULL OR (r.created_at,r.id)<($2,$3)) ORDER BY r.created_at DESC,r.id DESC LIMIT 51`, input.PostID, input.BeforeCreatedAt, input.BeforeID)
 		if err != nil {
 			return err
+		}
+		if local, _ := c.Get("usingReplica").(bool); local && len(reactions) > 0 {
+			ids := make([]string, len(reactions))
+			for i, v := range reactions {
+				ids[i] = v.ID
+			}
+			active, err := h.activeReadIDs(c, nil, ids)
+			if err != nil {
+				return err
+			}
+			filtered := reactions[:0]
+			for _, v := range reactions {
+				if active[v.ID] {
+					filtered = append(filtered, v)
+				}
+			}
+			reactions = filtered
 		}
 		items := make([]replaceRealMojiResponse, 0, len(reactions))
 		for _, reaction := range reactions {
@@ -174,7 +190,7 @@ func deleteRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

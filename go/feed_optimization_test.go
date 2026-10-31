@@ -139,3 +139,12 @@ func TestRecommendationScoresDeduplicatesAuthors(t *testing.T) {
 		t.Fatal("post order changed")
 	}
 }
+
+// Match pgx's support for PostgreSQL array arguments while retaining the
+// standard conversion of ordinary scalar arguments in this fixture.
+func (c feedConn) CheckNamedValue(value *driver.NamedValue) error {
+	if _, ok := value.Value.([]string); ok {
+		return nil
+	}
+	return driver.ErrSkip
+}

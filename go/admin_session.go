@@ -56,7 +56,7 @@ func getAdminSessionFromHeader(c *echo.Context, db *sqlx.DB) (*AdminSession, err
 func AdminSessionMiddleware(h *HandlerContext, authRequired bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			session, err := getAdminSessionFromHeader(c, h.DB)
+			session, err := getAdminSessionFromHeader(c, h.WriteDB())
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,8 @@ func AdminSessionMiddleware(h *HandlerContext, authRequired bool) echo.Middlewar
 }
 
 func CreateAdminSession(db *sqlx.DB, administratorID string) (*AdminSession, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -104,7 +105,9 @@ func getAdminSession(ctx context.Context, db sqlx.QueryerContext, sessionID stri
 }
 
 func InvalidateAdminSession(db *sqlx.DB, administratorID, tokenHash string) error {
-	if _, err := db.Exec(`
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := db.ExecContext(ctx, `
   UPDATE administrator_sessions
   SET active = false, invalidated_at = clock_timestamp()
   WHERE administrator_id = $1 AND token_hash = $2 AND active = true

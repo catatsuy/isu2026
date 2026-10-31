@@ -14,7 +14,12 @@ import (
 )
 
 type HandlerContext struct {
+	// DB is the legacy Primary alias used by write handlers and fixtures.
 	DB            *sqlx.DB
+	PrimaryDB     *sqlx.DB
+	ReplicaDB     *sqlx.DB
+	Replication   *replicaRouter
+	PrimaryAPI    *primaryAPIClient
 	Config        *Config
 	IPBans        *IPBanList
 	ImageFiles    *ImageFileStore
@@ -30,6 +35,17 @@ func NewServer(config *Config) *echo.Echo {
 func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	if !validRegion(config.Region) {
 		panic("invalid server region: " + config.Region)
+	}
+	var primaryAPI *primaryAPIClient
+	if config.PrimaryAPIURL != "" {
+		token, err := os.ReadFile(config.ImageTokenFile)
+		if err != nil {
+			panic(err)
+		}
+		primaryAPI, err = newPrimaryAPIClient(config.PrimaryAPIURL, config.Region, token)
+		if err != nil {
+			panic(err)
+		}
 	}
 	e := echo.New()
 	e.IPExtractor = extractClientIP
@@ -55,7 +71,12 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	db.SetConnMaxIdleTime(2 * time.Minute)
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		err := db.PingContext(ctx)
+		var err error
+		if primaryAPI != nil {
+			err = primaryAPI.call(ctx, "", "", primaryRPCRequest{Op: "ready"}, nil)
+		} else {
+			err = db.PingContext(ctx)
+		}
 		cancel()
 		if err == nil {
 			break
@@ -71,15 +92,28 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	}
 	handlerContext := &HandlerContext{
 		DB:            db,
+		PrimaryAPI:    primaryAPI,
 		Config:        config,
 		IPBans:        &IPBanList{},
 		ImageFiles:    imageFiles,
 		Notifications: newNotificationHub(db),
 	}
+	replication, stopReplication := newReplicaRouter(config, db, primaryAPI)
+	handlerContext.PrimaryDB = db
+	handlerContext.Replication = replication
+	if replication != nil {
+		handlerContext.ReplicaDB = replication.replica
+	}
+	e.Use(AsiaRoutingMiddleware(handlerContext))
+	if config.Region != "asia" {
+		e.Use(WriteDeadlineMiddleware)
+	}
+	e.Use(ReadRoutingMiddleware(handlerContext))
 	e.Use(IPBanMiddleware(handlerContext))
 
 	e.PUT("/internal/image-files/:imageId", imageFiles.peerHandler())
 	e.GET("/internal/image-files/:imageId", imageFiles.peerHandler())
+	e.POST(primaryRPCPath, primaryRPCHandler(handlerContext))
 	e.POST("/api/initialize", initializeHandler(handlerContext))
 	e.POST("/api/auth/register", registerHandler(handlerContext))
 	e.POST("/api/auth/login", loginHandler(handlerContext))
@@ -123,5 +157,12 @@ func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	e.DELETE("/api/admin/users/:userId/certification", deleteUserCertificationHandler(handlerContext), AdminSessionMiddleware(handlerContext, true))
 	e.POST("/api/admin/posting-window", openPostingWindowHandler(handlerContext), AdminSessionMiddleware(handlerContext, true))
 
-	return e, func() { imageFiles.Close(); db.Close() }
+	return e, func() {
+		stopReplication()
+		if primaryAPI != nil {
+			primaryAPI.client.CloseIdleConnections()
+		}
+		imageFiles.Close()
+		db.Close()
+	}
 }

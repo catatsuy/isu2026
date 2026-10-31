@@ -28,7 +28,7 @@ func createFriendRequestHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.RecipientID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.RecipientID)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func transitionFriendRequestHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		request, err := getFriendRequest(ctx, h.DB, input.RequestID)
+		request, err := getFriendRequest(ctx, h.WriteDB(), input.RequestID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "relationship_not_found")
 		}
@@ -125,7 +125,7 @@ func transitionFriendRequestHandler(h *HandlerContext) echo.HandlerFunc {
 		if (status == "cancelled" && actor != request.RequesterID) || (status != "cancelled" && actor != request.RecipientID) {
 			return NewAPIError(http.StatusForbidden, "relationship_action_forbidden")
 		}
-		tx, err := beginRelationshipTx(ctx, h.DB, request.RequesterID, request.RecipientID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), request.RequesterID, request.RecipientID)
 		if err != nil {
 			return err
 		}

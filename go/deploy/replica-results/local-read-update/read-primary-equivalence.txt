@@ -1,0 +1,4 @@
+=== RUN   TestPrimaryViewerBatchEquivalent
+    primary_permissions_test.go:93: validated 20 viewers in one read-only snapshot
+--- PASS: TestPrimaryViewerBatchEquivalent (0.43s)
+PASS

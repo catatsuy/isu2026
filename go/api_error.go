@@ -35,7 +35,7 @@ func APIErrorHandler(c *echo.Context, err error) {
 	case errors.As(err, &echoErr):
 		status = echoErr.StatusCode()
 	}
-	if status >= http.StatusInternalServerError {
+	if status >= http.StatusInternalServerError && c.Get("action_log") != true {
 		c.Logger().Error("request failed", "error", err)
 	}
 	body := APIErrorResponse{

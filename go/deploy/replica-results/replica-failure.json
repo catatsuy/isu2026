@@ -1,0 +1,8 @@
+{
+  "fallback_get_status": 200,
+  "get_before_ms": 731.3387379999767,
+  "blocked_write_status": 500,
+  "write_timeout_seconds": 10.203216018999228,
+  "get_after_ms": 709.0960510013247,
+  "write_outcome": "unknown; never automatically retried"
+}

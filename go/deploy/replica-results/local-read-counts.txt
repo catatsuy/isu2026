@@ -1,0 +1,4 @@
+isu02
+Oct 31 05:18:10 ip-192-168-2-10 isureal[4654]: 2026/10/31 05:18:10 replica reads name=isu02 local=60 fallback=0 policy_primary=1 healthy=true
+isu03
+Oct 31 05:18:10 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:18:10 replica reads name=isu03 local=60 fallback=0 policy_primary=1 healthy=true
