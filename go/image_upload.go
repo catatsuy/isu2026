@@ -1,8 +1,6 @@
 package isureal
 
 import (
-	"bytes"
-	"image/jpeg"
 	"log"
 	"net/http"
 	"strings"
@@ -162,7 +160,7 @@ func trustedUploadRPC(c *echo.Context) bool {
 
 func decodeUploadJPEG(c *echo.Context, data []byte, limit int, code string) error {
 	started := time.Now()
-	img, err := jpeg.Decode(bytes.NewReader(data))
+	size, err := validatedJPEGs.dimensions(data)
 	log.Printf("image_upload phase=jpeg route=%s bytes=%d duration_us=%d", c.Path(), len(data), time.Since(started).Microseconds())
 	if err != nil {
 		if code == "invalid_profile_image" {
@@ -170,7 +168,7 @@ func decodeUploadJPEG(c *echo.Context, data []byte, limit int, code string) erro
 		}
 		return NewAPIError(400, code)
 	}
-	if img.Bounds().Dx() > limit || img.Bounds().Dy() > limit {
+	if size.X > limit || size.Y > limit {
 		return NewAPIError(400, code)
 	}
 	return nil
