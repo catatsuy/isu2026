@@ -27,15 +27,16 @@ func TestImageFileReplicas(t *testing.T) {
 	server := httptest.NewServer(e)
 	defer server.Close()
 	primary := &ImageFileStore{Root: t.TempDir(), Peers: []string{server.URL}, token: token, client: &http.Client{Timeout: time.Second}}
+	defer primary.Close()
 	id := "109d53fc-c136-4f3d-a150-f28046faebad"
 	data := []byte("immutable jpeg")
 	if err := primary.Save(ctx, id, data); err != nil {
 		t.Fatal(err)
 	}
-	copied, err := os.ReadFile(ImageFilePath(replica.Root, id))
-	if err != nil || !bytes.Equal(copied, data) {
-		t.Fatalf("replica differs: %v", err)
-	}
+	waitImageTest(t, func() bool {
+		copied, err := os.ReadFile(ImageFilePath(replica.Root, id))
+		return err == nil && bytes.Equal(copied, data)
+	})
 	if err := os.Remove(ImageFilePath(primary.Root, id)); err != nil {
 		t.Fatal(err)
 	}
@@ -52,16 +53,12 @@ func TestImageFileReplicas(t *testing.T) {
 	if response.Code != 403 {
 		t.Fatal("unauthenticated internal download allowed")
 	}
-	primary.token = bytes.Repeat([]byte("x"), 32)
-	if err := primary.Save(ctx, "209d53fc-c136-4f3d-a150-f28046faebad", data); err == nil {
-		t.Fatal("unacknowledged replication accepted")
-	}
 }
 
 func TestNewImageRequiresReplica(t *testing.T) {
 	store := &ImageFileStore{Root: t.TempDir()}
 	if err := store.Save(context.Background(), "id", []byte("image")); err == nil {
-		t.Fatal("single local copy accepted")
+		t.Fatal("missing replica configuration accepted")
 	}
 }
 
@@ -251,8 +248,16 @@ func TestImageReplicaPersistenceFailure(t *testing.T) {
 	server := httptest.NewServer(e)
 	defer server.Close()
 	primary := &ImageFileStore{Root: t.TempDir(), Peers: []string{server.URL}, token: token, client: server.Client()}
-	if err := primary.Save(context.Background(), id, []byte("image")); err == nil {
-		t.Fatal("accepted failed replica persistence")
+	defer primary.Close()
+	if err := primary.Save(context.Background(), id, []byte("image")); err != nil {
+		t.Fatal(err)
+	}
+	waitImageTest(t, func() bool {
+		entries, _ := filepath.Glob(filepath.Join(primary.jobRoot(), "*", ".retry-*"))
+		return len(entries) > 0
+	})
+	if _, err := os.Stat(ImageFilePath(primary.jobRoot(), id)); err != nil {
+		t.Fatal("failed replica job lost", err)
 	}
 }
 
@@ -285,7 +290,7 @@ func TestWriteImageFileConcurrentMismatch(t *testing.T) {
 	}
 }
 
-func TestImageSaveWaitsForReplica(t *testing.T) {
+func TestImageSaveDoesNotWaitForReplica(t *testing.T) {
 	token := bytes.Repeat([]byte("k"), 32)
 	replica := &ImageFileStore{Root: t.TempDir(), token: token}
 	e := echo.New()
@@ -298,19 +303,20 @@ func TestImageSaveWaitsForReplica(t *testing.T) {
 	}))
 	defer server.Close()
 	primary := &ImageFileStore{Root: t.TempDir(), Peers: []string{server.URL}, token: token, client: server.Client()}
+	defer primary.Close()
 	done := make(chan error, 1)
 	go func() {
 		done <- primary.Save(context.Background(), "109d53fc-c136-4f3d-a150-f28046faebad", []byte("image"))
 	}()
-	<-entered
 	select {
 	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
 		close(release)
-		t.Fatalf("returned before replica persistence: %v", err)
-	default:
+		t.Fatal("Save waited for remote response")
 	}
+	<-entered
 	close(release)
-	if err := <-done; err != nil {
-		t.Fatal(err)
-	}
 }

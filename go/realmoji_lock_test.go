@@ -42,6 +42,7 @@ func TestConcurrentRealMojiReplacementPostgres(t *testing.T) {
 	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }))
 	defer peer.Close()
 	h := &HandlerContext{DB: db, ImageFiles: &ImageFileStore{Root: t.TempDir(), Peers: []string{peer.URL}, client: peer.Client()}}
+	defer h.ImageFiles.Close()
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
 	e.POST("/posts/:postId/realmojis", func(c *echo.Context) error {

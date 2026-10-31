@@ -22,6 +22,12 @@ type HandlerContext struct {
 }
 
 func NewServer(config *Config) *echo.Echo {
+	server, _ := NewServerWithCleanup(config)
+	return server
+}
+
+// NewServerWithCleanup returns a cleanup function to call after HTTP shutdown.
+func NewServerWithCleanup(config *Config) (*echo.Echo, func()) {
 	if !validRegion(config.Region) {
 		panic("invalid server region: " + config.Region)
 	}
@@ -117,5 +123,5 @@ func NewServer(config *Config) *echo.Echo {
 	e.DELETE("/api/admin/users/:userId/certification", deleteUserCertificationHandler(handlerContext), AdminSessionMiddleware(handlerContext, true))
 	e.POST("/api/admin/posting-window", openPostingWindowHandler(handlerContext), AdminSessionMiddleware(handlerContext, true))
 
-	return e
+	return e, func() { imageFiles.Close(); db.Close() }
 }

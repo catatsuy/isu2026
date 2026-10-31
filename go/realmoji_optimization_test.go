@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -94,30 +95,33 @@ func TestRealMojiSaveBeforeLocks(t *testing.T) {
 				return driver.RowsAffected(1), nil
 			}
 			db := optimizationDB(t, f)
-			inUse := make(chan int, 1)
-			peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				inUse <- db.Stats().InUse
-				if scenario == "save failure" {
-					w.WriteHeader(500)
-				} else {
-					w.WriteHeader(204)
+			root := t.TempDir()
+			if scenario == "save failure" {
+				root = filepath.Join(root, "blocked")
+				if err := os.WriteFile(root, []byte("blocked"), 0600); err != nil {
+					t.Fatal(err)
 				}
+			}
+			release := make(chan struct{})
+			peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				<-release
+				w.WriteHeader(204)
 			}))
 			defer peer.Close()
-			// Save completion is observed synchronously by the first lock query. The
-			// peer goroutine communicates through the channel, avoiding shared state.
+			defer close(release)
 			originalQuery := f.query
 			f.query = func(q string, a []driver.NamedValue) (driver.Rows, error) {
 				if strings.Contains(q, "FOR NO KEY UPDATE") && !saved {
-					if n := <-inUse; n != 0 {
-						t.Fatalf("save held %d connections", n)
+					files, _ := filepath.Glob(filepath.Join(root, "*", "*"))
+					if len(files) == 0 {
+						t.Fatal("lock before local save")
 					}
 					saved = true
 				}
 				return originalQuery(q, a)
 			}
-			root := t.TempDir()
 			h := &HandlerContext{DB: db, ImageFiles: &ImageFileStore{Root: root, Peers: []string{peer.URL}, client: peer.Client()}}
+			defer h.ImageFiles.Close()
 			var body bytes.Buffer
 			mw := multipart.NewWriter(&body)
 			part, err := mw.CreateFormFile("image", "realmoji.jpg")
@@ -152,9 +156,6 @@ func TestRealMojiSaveBeforeLocks(t *testing.T) {
 				t.Fatalf("status=%d body=%s", rec.Code, rec.Body)
 			}
 			if scenario == "save failure" {
-				if n := <-inUse; n != 0 {
-					t.Fatal(n)
-				}
 				if f.begins != 0 || writes != 0 {
 					t.Fatal("save failure touched transaction")
 				}
