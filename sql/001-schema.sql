@@ -82,6 +82,9 @@ CREATE TABLE users (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
+CREATE UNIQUE INDEX users_username_unique ON users(username);
+CREATE INDEX users_active_username_id ON users(username, id) WHERE status = 'active';
+
 ALTER TABLE image_objects ADD CONSTRAINT image_objects_owner_fk FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE RESTRICT;
 
 -- 2026-09-10 管理者を消す時のオペレーションはどうすればよいですか？
@@ -121,6 +124,8 @@ CREATE TABLE friendships (
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE(user_low_id,user_high_id)
 );
+
+CREATE INDEX friendships_high_low ON friendships(user_high_id, user_low_id);
 
 CREATE TABLE follows (
   id varchar(36) PRIMARY KEY,
@@ -166,6 +171,7 @@ CREATE TABLE posts (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   deleted_at timestamptz
 );
+CREATE INDEX posts_active_image_author ON posts(image_id, author_id) WHERE deleted_at IS NULL;
 CREATE INDEX posts_author_id ON posts(author_id);
 CREATE INDEX posts_posting_window_id ON posts(posting_window_id);
 
@@ -189,6 +195,8 @@ CREATE TABLE realmojis (
   deleted_at timestamptz
 );
 CREATE UNIQUE INDEX realmojis_one_active ON realmojis(post_id,reactor_id) WHERE replaced_at IS NULL AND deleted_at IS NULL;
+CREATE INDEX realmojis_active_image_reactor ON realmojis(image_id, reactor_id) INCLUDE (post_id)
+  WHERE replaced_at IS NULL AND deleted_at IS NULL;
 CREATE INDEX realmojis_post_id ON realmojis(post_id);
 
 CREATE TABLE comments (
