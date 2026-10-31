@@ -2,6 +2,7 @@ package isureal
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,10 +23,12 @@ import (
 
 // A tiny database fixture verifies authorization even when the file is cached.
 type imageDBFixture struct {
-	active     bool
-	generation string
-	dataReads  int
-	queries    int
+	active                bool
+	visibilityChecks      int
+	revokeAfterFirstCheck bool
+	generation            string
+	dataReads             int
+	queries               int
 }
 type imageConnector struct{ fixture *imageDBFixture }
 
@@ -49,9 +53,10 @@ func (c imageConn) QueryContext(_ context.Context, query string, _ []driver.Name
 	case strings.Contains(query, "SELECT u.secret_key_hash"):
 		return &imageRows{columns: []string{"secret_key_hash"}, values: []driver.Value{strings.Repeat("00", 32)}}, nil
 	case strings.Contains(query, "SELECT i.media_type"):
-		rows := &imageRows{columns: []string{"media_type", "created_at", "generation"}}
-		if f.active {
-			rows.values = []driver.Value{"image/jpeg", time.Unix(100, 0), f.generation}
+		rows := &imageRows{columns: []string{"media_type"}}
+		f.visibilityChecks++
+		if f.active && (!f.revokeAfterFirstCheck || f.visibilityChecks == 1) {
+			rows.values = []driver.Value{"image/jpeg"}
 		}
 		return rows, nil
 	case strings.Contains(query, "SELECT data"):
@@ -82,7 +87,11 @@ func TestImageHandlerAuthorizesCachedImages(t *testing.T) {
 	f := &imageDBFixture{active: true, generation: "1"}
 	db := sql.OpenDB(imageConnector{f})
 	t.Cleanup(func() { db.Close() })
-	h := &HandlerContext{DB: sqlx.NewDb(db, "fixture"), Config: &Config{ImageCacheDir: t.TempDir()}}
+	files := &ImageFileStore{Root: t.TempDir()}
+	if err := WriteImageFile(files.Root, "image-id", []byte("jpeg bytes"), true); err != nil {
+		t.Fatal(err)
+	}
+	h := &HandlerContext{DB: sqlx.NewDb(db, "fixture"), Config: &Config{}, ImageFiles: files}
 	e := echo.New()
 	e.HTTPErrorHandler = APIErrorHandler
 	e.GET("/api/images/:imageId", getImageHandler(h))
@@ -102,7 +111,7 @@ func TestImageHandlerAuthorizesCachedImages(t *testing.T) {
 		t.Fatalf("bad redirect: %d %v %q", first.Code, first.Header(), first.Body.String())
 	}
 	second := request(url(exp, sig))
-	if second.Code != 200 || f.dataReads != 1 || f.queries != 5 {
+	if second.Code != 200 || f.dataReads != 0 || f.queries != 4 {
 		t.Fatalf("cache hit did not reauthorize or reread bytes: status=%d, reads=%d, queries=%d", second.Code, f.dataReads, f.queries)
 	}
 	f.active = false
@@ -116,9 +125,38 @@ func TestImageHandlerAuthorizesCachedImages(t *testing.T) {
 			t.Fatal("invalid signature or expired URL allowed")
 		}
 	}
-	f.generation = "2"
-	next := request(url(exp, sig))
-	if next.Code != 200 || next.Header().Get("X-Accel-Redirect") == first.Header().Get("X-Accel-Redirect") || f.dataReads != 2 {
-		t.Fatal("generation change reused old image")
+	// A valid, authorized image missing on every file replica must fail; never load DB bytes.
+	if err := os.Remove(ImageFilePath(files.Root, "image-id")); err != nil {
+		t.Fatal(err)
+	}
+	if got := request(url(exp, sig)); got.Code != 500 || f.dataReads != 0 {
+		t.Fatal("missing file fell back to DB bytes")
+	}
+}
+
+func TestImageDeletedDuringSlowReplicaFetch(t *testing.T) {
+	f := &imageDBFixture{active: true, revokeAfterFirstCheck: true}
+	db := sql.OpenDB(imageConnector{f})
+	defer db.Close()
+	token := []byte(strings.Repeat("t", 32))
+	files := &ImageFileStore{Root: t.TempDir(), token: token, client: &http.Client{Timeout: 3 * time.Second}}
+	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1100 * time.Millisecond)
+		digest := sha256.Sum256([]byte("jpeg"))
+		w.Header().Set("X-Image-Signature", files.signature("RESPONSE", "image-id", r.Header.Get("X-Image-Time"), hex.EncodeToString(digest[:])))
+		w.Write([]byte("jpeg"))
+	}))
+	defer peer.Close()
+	files.Peers = []string{peer.URL}
+	h := &HandlerContext{DB: sqlx.NewDb(db, "fixture"), Config: &Config{}, ImageFiles: files}
+	e := echo.New()
+	e.HTTPErrorHandler = APIErrorHandler
+	e.GET("/api/images/:imageId", getImageHandler(h))
+	exp := time.Now().Add(time.Hour).Unix()
+	sig := base64.RawURLEncoding.EncodeToString(imageSignature(make([]byte, 32), "image-id", exp))
+	response := httptest.NewRecorder()
+	e.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/images/image-id?exp="+strconv.FormatInt(exp, 10)+"&sig="+sig, nil))
+	if response.Code != 403 || response.Header().Get("X-Accel-Redirect") != "" || f.visibilityChecks != 2 {
+		t.Fatalf("stale authorization after replica fetch: status=%d checks=%d", response.Code, f.visibilityChecks)
 	}
 }

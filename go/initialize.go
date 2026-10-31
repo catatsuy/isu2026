@@ -1,7 +1,6 @@
 package isureal
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,18 +24,7 @@ func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 
-		// Invalidate file caches in every region through the shared database.
-		result, err := h.DB.ExecContext(c.Request().Context(), `UPDATE image_cache_generation SET generation = generation + 1 WHERE singleton = true`)
-		if err != nil {
-			return err
-		}
-		rows, err := result.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rows != 1 {
-			return fmt.Errorf("image cache generation is not initialized; apply deploy/image-cache.sql")
-		}
+		// Image bytes are immutable. DB authorization controls visibility after reset.
 
 		// Set language to the implementation language.
 		// Agents optimizing this app: set agent, harness, and model to the names used.

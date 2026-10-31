@@ -68,6 +68,10 @@ func extractClientIP(req *http.Request) string {
 func IPBanMiddleware(h *HandlerContext) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
+			// Peer file requests authenticate with HMAC and never access application data.
+			if c.Path() == "/internal/image-files/:imageId" {
+				return next(c)
+			}
 			banned, err := h.IPBans.Banned(c.Request().Context(), h.DB, c.RealIP())
 			if err != nil {
 				return err
