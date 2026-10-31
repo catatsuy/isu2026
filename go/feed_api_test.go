@@ -2,140 +2,188 @@ package isureal
 
 import (
 	"context"
-	"database/sql"
-	"database/sql/driver"
-	"errors"
-	"io"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/labstack/echo/v5"
+	"time"
 )
 
-type feedQuery struct {
-	contains string
-	args     []any
-	columns  []string
-	rows     [][]driver.Value
-}
-type feedFixture struct {
-	t       *testing.T
-	queries []feedQuery
-	calls   int
-}
-type feedConnector struct{ f *feedFixture }
-
-func (c feedConnector) Connect(context.Context) (driver.Conn, error) { return feedConn{c.f}, nil }
-func (c feedConnector) Driver() driver.Driver                        { return loginDriver{} }
-
-type feedConn struct{ f *feedFixture }
-
-func (c feedConn) Prepare(string) (driver.Stmt, error) { return nil, errors.New("unexpected prepare") }
-func (c feedConn) Close() error                        { return nil }
-func (c feedConn) Begin() (driver.Tx, error)           { return nil, errors.New("unexpected transaction") }
-func (c feedConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
-	f := c.f
-	if f.calls >= len(f.queries) {
-		f.t.Fatalf("unexpected SQL: %s", query)
+// Compare the optimized query with the original Go authorization and ranking,
+// using real PostgreSQL semantics (arrays, tuple cursors and LIMIT).
+func TestFeedSQLPostgres(t *testing.T) {
+	db := localPostgresTestDB(t)
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Fatal(err)
 	}
-	want := f.queries[f.calls]
-	f.calls++
-	actual := make([]any, len(args))
-	for i, arg := range args {
-		actual[i] = arg.Value
-	}
-	if !strings.Contains(query, want.contains) || !reflect.DeepEqual(actual, want.args) {
-		f.t.Fatalf("unexpected SQL/args: %s %v; want %s %v", query, actual, want.contains, want.args)
-	}
-	return &feedRows{columns: want.columns, rows: want.rows}, nil
-}
-
-type feedRows struct {
-	columns []string
-	rows    [][]driver.Value
-}
-
-func (r *feedRows) Columns() []string { return r.columns }
-func (r *feedRows) Close() error      { return nil }
-func (r *feedRows) Next(dest []driver.Value) error {
-	if len(r.rows) == 0 {
-		return io.EOF
-	}
-	copy(dest, r.rows[0])
-	r.rows = r.rows[1:]
-	return nil
-}
-func feedTestDB(t *testing.T, queries []feedQuery) *sqlx.DB {
-	t.Helper()
-	f := &feedFixture{t: t, queries: queries}
-	db := sqlx.NewDb(sql.OpenDB(feedConnector{f}), "fixture")
-	t.Cleanup(func() {
-		db.Close()
-		if f.calls != len(queries) {
-			t.Errorf("executed %d queries, want %d", f.calls, len(queries))
+	defer tx.Rollback()
+	exec := func(q string, args ...any) {
+		t.Helper()
+		if _, err := tx.Exec(q, args...); err != nil {
+			t.Fatal(err)
 		}
-	})
-	return db
-}
-func viewerQueries(posted bool) []feedQuery {
-	return []feedQuery{
-		{contains: "FROM users WHERE id = $1", args: []any{"viewer"}, columns: []string{"id", "region", "secret_key_hash"}, rows: [][]driver.Value{{"viewer", "asia", strings.Repeat("ab", 32)}}},
-		{contains: "SELECT EXISTS(", args: []any{"viewer", "asia"}, columns: []string{"exists"}, rows: [][]driver.Value{{posted}}},
 	}
-}
-func TestFeedWithoutPostSkipsRelationshipsAndPosts(t *testing.T) {
-	for _, feed := range []string{"friends", "friends-of-friends", "public", "following"} {
-		t.Run(feed, func(t *testing.T) {
-			db := feedTestDB(t, viewerQueries(false))
-			e := echo.New()
-			e.GET("/api/feed/:feed", func(c *echo.Context) error {
-				c.Set("session", &Session{UserID: "viewer"})
-				return getFeedHandler(&HandlerContext{DB: db})(c)
-			})
-			res := httptest.NewRecorder()
-			e.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/feed/"+feed, nil))
-			if res.Code != http.StatusOK || strings.TrimSpace(res.Body.String()) != `{"items":[],"hasMore":false}` {
-				t.Fatalf("unexpected response: %d %s", res.Code, res.Body)
+	for _, q := range []string{
+		`CREATE TEMP TABLE users (id text PRIMARY KEY, username text DEFAULT '', secret_key_hash text, display_name text DEFAULT '', bio text DEFAULT '', profile_image_id text, region text DEFAULT 'asia', account_type text DEFAULT 'personal', status text DEFAULT 'active') ON COMMIT DROP`,
+		`CREATE TEMP TABLE posting_windows (id text PRIMARY KEY, on_time_deadline timestamptz, ended_at timestamptz) ON COMMIT DROP`,
+		`CREATE TEMP TABLE posts (id text PRIMARY KEY, author_id text, posting_window_id text DEFAULT 'open', image_id text DEFAULT 'image', caption text DEFAULT '', visibility text, location_kind text DEFAULT 'none', latitude float8, longitude float8, locality text, posted_at timestamptz, deleted_at timestamptz) ON COMMIT DROP`,
+		`CREATE TEMP TABLE follows (follower_id text, followee_id text) ON COMMIT DROP`,
+		`CREATE TEMP TABLE friendships (user_low_id text, user_high_id text) ON COMMIT DROP`,
+		`CREATE TEMP TABLE realmojis (post_id text, reactor_id text, replaced_at timestamptz, deleted_at timestamptz) ON COMMIT DROP`,
+		`CREATE TEMP TABLE comments (post_id text, author_id text, deleted_at timestamptz) ON COMMIT DROP`,
+		`INSERT INTO posting_windows VALUES ('open',now(),NULL), ('closed',now(),now())`,
+	} {
+		exec(q)
+	}
+	viewer := viewerContext{User: User{ID: "viewer"}, HasPostedToday: true,
+		Friends:          map[string]bool{"friend": true, "blocked-friend": true},
+		FriendsOfFriends: map[string]bool{"fof": true, "blocked-fof": true, "friend": true},
+		Blocked:          map[string]bool{"blocked-friend": true, "blocked-fof": true, "blocked-stranger": true},
+		MutualFriends:    map[string]int{"fof": 2, "blocked-fof": 1}}
+	authors := []string{"viewer", "friend", "fof", "stranger", "blocked-friend", "blocked-fof", "blocked-stranger", "inactive"}
+	for _, author := range authors {
+		exec(`INSERT INTO users (id,secret_key_hash) VALUES ($1,$2)`, author, strings.Repeat("00", 32))
+		exec(`INSERT INTO follows VALUES ('viewer',$1)`, author)
+	}
+	exec(`UPDATE users SET status='deleted' WHERE id='inactive'`)
+	stamp := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Equal timestamps exercise the ID tie break, including at page boundaries.
+	for i := 0; i < 160; i++ {
+		for _, author := range authors {
+			for _, visibility := range []string{"public", "friends", "friends_of_friends", "private"} {
+				id := fmt.Sprintf("%03d-%s-%s", i, author, visibility)
+				exec(`INSERT INTO posts (id,author_id,visibility,posted_at) VALUES ($1,$2,$3,$4)`, id, author, visibility, stamp.Add(time.Duration(i/20)*time.Second))
 			}
+		}
+	}
+	exec(`INSERT INTO posts (id,author_id,visibility,posted_at,posting_window_id) VALUES ('closed','friend','public',now(),'closed')`)
+	exec(`INSERT INTO posts (id,author_id,visibility,posted_at,deleted_at) VALUES ('deleted','friend','public',now(),now())`)
+	exec(`INSERT INTO friendships VALUES ('friend','fof')`)
+	// An old post outside the newest 51 candidates must still win the ranking.
+	exec(`INSERT INTO comments VALUES ('000-fof-public','friend',NULL)`)
+	ctx := context.Background()
+	for _, feed := range []string{"friends", "public", "following", "friends-of-friends"} {
+		t.Run(feed, func(t *testing.T) {
+			input := getFeedRequest{Feed: feed}
+			seen := map[string]bool{}
+			for page := 0; page < 30; page++ {
+				before, id := input.BeforePostedAt, input.BeforeID
+				if feed == "friends-of-friends" {
+					before = nil
+					id = ""
+				}
+				legacy, err := selectPostsWithAuthor(ctx, tx, `AND p.author_id <> $1 AND w.ended_at IS NULL AND ($2::timestamptz IS NULL OR (p.posted_at,p.id)<($2,$3)) ORDER BY p.posted_at DESC,p.id DESC`, viewer.ID, before, id)
+				if err != nil {
+					t.Fatal(err)
+				}
+				candidates := []PostWithAuthor{}
+				following := map[string]bool{}
+				for _, a := range authors {
+					following[a] = true
+				}
+				for _, p := range legacy {
+					if viewer.canView(p.Post) && matchesFeed(viewer, following, p.Post, feed) {
+						candidates = append(candidates, p)
+					}
+				}
+				optimized, err := selectFeedPosts(ctx, tx, viewer, input)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if feed != "friends-of-friends" && len(optimized) != min(51, len(candidates)) {
+					t.Fatalf("fetched %d rows for %d eligible", len(optimized), len(candidates))
+				}
+				var oldScores, newScores map[string]int64
+				if feed == "friends-of-friends" {
+					oldScores, err = recommendationScores(ctx, tx, viewer, candidates)
+					if err != nil {
+						t.Fatal(err)
+					}
+					newScores, err = recommendationScores(ctx, tx, viewer, optimized)
+					if err != nil {
+						t.Fatal(err)
+					}
+				}
+				want := makeFeedResponse(candidates, oldScores, input)
+				got := makeFeedResponse(optimized, newScores, input)
+				if got.HasMore != want.HasMore || !reflect.DeepEqual(feedOrder(got), feedOrder(want)) {
+					t.Fatalf("page %d differs from original", page)
+				}
+				if page == 0 && !got.HasMore {
+					t.Fatal("expected more than 50 eligible posts")
+				}
+				if page == 0 && feed == "friends-of-friends" && got.Items[0].ID != "000-fof-public" {
+					t.Fatal("old high-score post lost")
+				}
+				for _, item := range got.Items {
+					if seen[item.ID] {
+						t.Fatalf("duplicate %s", item.ID)
+					}
+					seen[item.ID] = true
+				}
+				if !got.HasMore {
+					return
+				}
+				last := got.Items[len(got.Items)-1]
+				input.BeforeID = last.ID
+				input.BeforePostedAt = &last.PostedAt
+				input.BeforeScore = last.Score
+			}
+			t.Fatal("pagination did not finish")
 		})
 	}
-}
-func TestLoadViewerContextStillLoadsRelationshipsWithoutPost(t *testing.T) {
-	queries := append(viewerQueries(false),
-		feedQuery{contains: "FROM block_relations", args: []any{"viewer"}, columns: []string{"id"}, rows: [][]driver.Value{{"blocked"}}},
-		feedQuery{contains: "WHERE user_low_id = $1 OR user_high_id = $1", args: []any{"viewer"}, columns: []string{"user_low_id", "user_high_id"}, rows: [][]driver.Value{{"viewer", "friend"}}},
-		feedQuery{contains: "WHERE user_low_id IN ($1) OR user_high_id IN ($2)", args: []any{"friend", "friend"}, columns: []string{"user_low_id", "user_high_id"}, rows: [][]driver.Value{{"friend", "other"}}},
-	)
-	viewer, err := loadViewerContext(context.Background(), feedTestDB(t, queries), "viewer")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if viewer.HasPostedToday || !viewer.Blocked["blocked"] || !viewer.Friends["friend"] || !viewer.FriendsOfFriends["other"] || viewer.MutualFriends["other"] != 1 {
-		t.Fatalf("missing viewer data: %+v", viewer)
-	}
-	if !viewer.canView(Post{AuthorID: "viewer"}) || viewer.canView(Post{AuthorID: "other", Visibility: "public"}) {
-		t.Fatal("view permissions changed")
+	viewer.HasPostedToday = false
+	posts, err := selectFeedPosts(ctx, tx, viewer, getFeedRequest{Feed: "public"})
+	if err != nil || len(posts) != 0 {
+		t.Fatalf("unposted viewer: %v %v", posts, err)
 	}
 }
-func TestRecommendationScoresDeduplicatesAuthors(t *testing.T) {
-	db := feedTestDB(t, []feedQuery{
-		{contains: "WHERE user_low_id IN ($1, $2) OR user_high_id IN ($3, $4)", args: []any{"author-a", "author-b", "author-a", "author-b"}, columns: []string{"user_low_id", "user_high_id"}, rows: [][]driver.Value{{"author-a", "mutual"}, {"author-b", "mutual"}}},
-		{contains: "WHERE r.post_id IN ($1, $2, $3)", args: []any{"post-1", "post-2", "post-3", "post-1", "post-2", "post-3"}, columns: []string{"post_id", "user_id"}, rows: [][]driver.Value{{"post-1", "friend"}, {"post-2", "stranger"}, {"post-3", "friend"}}},
-	})
-	posts := []PostWithAuthor{{Post: Post{ID: "post-1", AuthorID: "author-a"}}, {Post: Post{ID: "post-2", AuthorID: "author-a"}}, {Post: Post{ID: "post-3", AuthorID: "author-b"}}}
-	viewer := viewerContext{Friends: map[string]bool{"friend": true}, MutualFriends: map[string]int{"author-a": 2, "author-b": 1, "mutual": 4}}
-	scores, err := recommendationScores(context.Background(), db, viewer, posts)
-	if err != nil {
-		t.Fatal(err)
+
+func TestFeedResponsePageSize(t *testing.T) {
+	for _, n := range []int{0, 49, 50, 51} {
+		posts := make([]PostWithAuthor, n)
+		got := makeFeedResponse(posts, nil, getFeedRequest{Feed: "public"})
+		if len(got.Items) != min(n, 50) || got.HasMore != (n > 50) {
+			t.Fatalf("size %d: %+v", n, got)
+		}
 	}
-	if want := map[string]int64{"post-1": 20, "post-2": 10, "post-3": 17}; !reflect.DeepEqual(scores, want) {
-		t.Fatalf("scores = %v, want %v", scores, want)
+}
+
+func feedOrder(response getFeedResponse) []string {
+	result := make([]string, 0, len(response.Items))
+	for _, item := range response.Items {
+		value := item.ID
+		if item.Score != nil {
+			value += fmt.Sprintf(":%d", *item.Score)
+		}
+		result = append(result, value)
 	}
-	if posts[0].ID != "post-1" || posts[1].ID != "post-2" || posts[2].ID != "post-3" {
-		t.Fatal("post order changed")
+	return result
+}
+
+func TestRankedFeedOrderAndCursor(t *testing.T) {
+	stamp := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	posts := make([]PostWithAuthor, 80)
+	scores := map[string]int64{}
+	for i := range posts {
+		id := fmt.Sprintf("%03d", 80-i)
+		posts[i].Post = Post{ID: id, PostedAt: stamp}
+		scores[id] = 1
+	}
+	scores["001"] = 100 // The last SQL candidate wins; never limit before scoring.
+	first := makeFeedResponse(posts, scores, getFeedRequest{Feed: "friends-of-friends"})
+	if !first.HasMore || first.Items[0].ID != "001" || first.Items[1].ID != "080" || first.Items[49].ID != "032" {
+		t.Fatalf("wrong first page: %v", feedOrder(first))
+	}
+	last := first.Items[49]
+	second := makeFeedResponse(posts, scores, getFeedRequest{Feed: "friends-of-friends", BeforeID: last.ID, BeforePostedAt: &last.PostedAt, BeforeScore: last.Score})
+	if second.HasMore || len(second.Items) != 30 || second.Items[0].ID != "031" || second.Items[29].ID != "002" {
+		t.Fatalf("wrong second page: %v", feedOrder(second))
+	}
+	// At equal scores, timestamps take precedence over IDs.
+	older := Post{ID: "zzz", PostedAt: stamp.Add(-time.Second)}
+	if !rankedBefore(1, older, 1, stamp, "032") || rankedBefore(1, Post{ID: "032", PostedAt: stamp}, 1, stamp, "032") {
+		t.Fatal("incorrect timestamp or exclusive cursor boundary")
 	}
 }

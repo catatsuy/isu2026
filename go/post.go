@@ -243,3 +243,53 @@ func getBlockedUserIDs(ctx context.Context, db sqlx.QueryerContext, userID strin
 	}
 	return blocked, nil
 }
+
+// selectFeedPosts uses the same relationship snapshot as canView and ranking.
+// Arrays keep the number of bind parameters constant even for large friend sets.
+func selectFeedPosts(ctx context.Context, db sqlx.QueryerContext, viewer viewerContext, input getFeedRequest) ([]PostWithAuthor, error) {
+	if !viewer.HasPostedToday {
+		return []PostWithAuthor{}, nil
+	}
+	beforePostedAt, beforeID := input.BeforePostedAt, input.BeforeID
+	if input.Feed == "friends-of-friends" {
+		// Ranked cursors must be applied after scoring all eligible candidates.
+		beforePostedAt, beforeID = nil, ""
+	}
+	conditions := `
+  AND p.author_id <> $1 AND w.ended_at IS NULL
+  AND ($2::timestamptz IS NULL OR (p.posted_at, p.id) < ($2, $3))
+  AND NOT (p.author_id = ANY($4::text[]))
+  AND (p.visibility = 'public'
+       OR (p.visibility = 'friends' AND p.author_id = ANY($5::text[]))
+       OR (p.visibility = 'friends_of_friends' AND
+           (p.author_id = ANY($5::text[]) OR p.author_id = ANY($6::text[]))))
+ `
+	switch input.Feed {
+	case "friends":
+		conditions += ` AND p.author_id = ANY($5::text[])`
+	case "public":
+		conditions += ` AND p.visibility = 'public'`
+	case "following":
+		conditions += ` AND EXISTS (SELECT 1 FROM follows f WHERE f.follower_id = $1 AND f.followee_id = p.author_id)`
+	case "friends-of-friends":
+		conditions += ` AND NOT (p.author_id = ANY($5::text[])) AND p.author_id = ANY($6::text[])`
+	default:
+		return nil, errors.New("invalid feed")
+	}
+	conditions += ` ORDER BY p.posted_at DESC, p.id DESC`
+	if input.Feed != "friends-of-friends" {
+		conditions += ` LIMIT 51`
+	}
+	return selectPostsWithAuthor(ctx, db, conditions, viewer.ID, beforePostedAt, beforeID,
+		trueMapKeys(viewer.Blocked), trueMapKeys(viewer.Friends), trueMapKeys(viewer.FriendsOfFriends))
+}
+
+func trueMapKeys(values map[string]bool) []string {
+	keys := make([]string, 0, len(values))
+	for key, value := range values {
+		if value {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
