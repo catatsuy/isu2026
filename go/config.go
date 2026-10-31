@@ -50,6 +50,9 @@ func (c *Config) DatabaseDSN() string {
 		Host:   net.JoinHostPort(c.DBHost, c.DBPort),
 		Path:   "/" + c.DBName,
 	}
+	query := u.Query()
+	query.Set("default_query_exec_mode", "exec")
+	u.RawQuery = query.Encode()
 	return u.String()
 }
 
