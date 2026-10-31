@@ -41,33 +41,45 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		viewer := GetSession(c).UserID
-		var users []User
-		if err := h.DB.SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3)) ORDER BY username, id`, viewer, input.BeforeUsername, input.BeforeID); err != nil {
-			return err
-		}
 		blocked, err := getBlockedUserIDs(ctx, h.DB, viewer)
 		if err != nil {
 			return err
 		}
 		query := normalizeSearchText(input.Q)
 		items := make([]relationshipUserResponse, 0)
-		for _, user := range users {
-			if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
-				continue
-			}
-			if blocked[user.ID] {
-				continue
-			}
-			if err := user.setImageKey(); err != nil {
+		// Grow batches for sparse matches while keeping memory and each SQL
+		// result bounded. The cursor always advances over scanned users.
+		batchSize := 256
+		beforeUsername, beforeID := input.BeforeUsername, input.BeforeID
+		for len(items) < 51 {
+			var users []User
+			if err := h.DB.SelectContext(ctx, &users, `SELECT `+strings.Join(userColumns, ", ")+` FROM users WHERE status='active' AND id<>$1 AND ($2='' OR (username,id)>($2,$3)) ORDER BY username, id LIMIT $4`, viewer, beforeUsername, beforeID, batchSize); err != nil {
 				return err
 			}
-			if user.AccountType != "certified_public" {
-				user.Bio = ""
+			for _, user := range users {
+				if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
+					continue
+				}
+				if blocked[user.ID] {
+					continue
+				}
+				if err := user.setImageKey(); err != nil {
+					return err
+				}
+				if user.AccountType != "certified_public" {
+					user.Bio = ""
+				}
+				items = append(items, newRelationshipUserResponse(user))
+				if len(items) == 51 {
+					break
+				}
 			}
-			items = append(items, newRelationshipUserResponse(user))
-			if len(items) == 51 {
+			if len(users) < batchSize {
 				break
 			}
+			last := users[len(users)-1]
+			beforeUsername, beforeID = last.Username, last.ID
+			batchSize = min(batchSize*2, 4096)
 		}
 		hasMore := len(items) > 50
 		if hasMore {
