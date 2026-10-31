@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,13 +20,19 @@ func TestWarmImageURLs(t *testing.T) {
 		{contains: "FROM posts", args: []any{}, columns: []string{"secret_key_hash", "image_id"}, rows: [][]driver.Value{{hash, "post"}}},
 		{contains: "FROM realmojis", args: []any{}, columns: []string{"secret_key_hash", "image_id"}, rows: [][]driver.Value{{hash, "realmoji"}}},
 	}}
+	for i := range fixture.queries {
+		for j := range 64 {
+			fixture.queries[i].rows = append(fixture.queries[i].rows, []driver.Value{hash, fmt.Sprintf("stage-%d-image-%d", i, j)})
+		}
+	}
+
 	db := sqlx.NewDb(sql.OpenDB(feedConnector{fixture}), "fixture")
 	defer db.Close()
 	var cache imageURLCache
-	if count := warmImageURLs(context.Background(), db, &cache); count != 3 {
+	if count := warmImageURLs(context.Background(), db, &cache); count != 195 {
 		t.Fatalf("warmed %d", count)
 	}
-	if fixture.calls != 3 || cache.misses != 3 {
+	if fixture.calls != 3 || cache.misses != 195 {
 		t.Fatal("did not warm each image class")
 	}
 	for _, id := range []string{"profile", "post", "realmoji"} {
@@ -65,6 +72,23 @@ func TestWarmImageURLsInvalidKey(t *testing.T) {
 	}
 	if len(cache.entries) != 0 {
 		t.Fatal("invalid signing key cached")
+	}
+}
+
+func TestWarmImageURLQueryWaitsForWorkersOnError(t *testing.T) {
+	hash := hex.EncodeToString(make([]byte, 32))
+	values := make([][]driver.Value, 0, 33)
+	for i := range 32 {
+		values = append(values, []driver.Value{hash, fmt.Sprintf("image-%d", i)})
+	}
+	values = append(values, []driver.Value{"invalid-key", "bad-image"})
+	f := &feedFixture{t: t, queries: []feedQuery{{contains: "profile_image_id", args: []any{}, columns: []string{"secret_key_hash", "image_id"}, rows: values}}}
+	db := sqlx.NewDb(sql.OpenDB(feedConnector{f}), "fixture")
+	defer db.Close()
+	var cache imageURLCache
+	count, err := warmImageURLQuery(context.Background(), db, &cache, imageURLWarmupQueries[0])
+	if err == nil || count != 32 || len(cache.entries) != 32 {
+		t.Fatalf("workers not finished: count=%d entries=%d err=%v", count, len(cache.entries), err)
 	}
 }
 

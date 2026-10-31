@@ -3,6 +3,8 @@ package isureal
 import (
 	"context"
 	"log"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -54,13 +56,38 @@ func warmImageURLs(ctx context.Context, db *sqlx.DB, cache *imageURLCache) int {
 	return total
 }
 
-func warmImageURLQuery(ctx context.Context, db *sqlx.DB, cache *imageURLCache, query string) (int, error) {
+type imageURLWarmupJob struct {
+	key     []byte
+	imageID string
+}
+
+func warmImageURLQuery(ctx context.Context, db *sqlx.DB, cache *imageURLCache, query string) (count int, err error) {
 	rows, err := db.QueryxContext(ctx, query)
 	if err != nil {
 		return 0, err
 	}
 	defer rows.Close()
-	count := 0
+	// Keep SQL streaming on one goroutine and use exactly two CPU workers.
+	// The small queue bounds memory and pending work when a deadline expires.
+	jobs := make(chan imageURLWarmupJob, 32)
+	var workers sync.WaitGroup
+	var completed atomic.Int64
+	for range 2 {
+		workers.Go(func() {
+			for job := range jobs {
+				if ctx.Err() != nil {
+					return
+				}
+				cache.get(job.key, job.imageID, time.Now())
+				completed.Add(1)
+			}
+		})
+	}
+	defer func() {
+		close(jobs)
+		workers.Wait()
+		count = int(completed.Load())
+	}()
 	for rows.Next() {
 		if err := ctx.Err(); err != nil {
 			return count, err
@@ -73,8 +100,14 @@ func warmImageURLQuery(ctx context.Context, db *sqlx.DB, cache *imageURLCache, q
 		if err != nil {
 			return count, err
 		}
-		cache.get(key, id, time.Now())
-		count++
+		select {
+		case jobs <- imageURLWarmupJob{key: key, imageID: id}:
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		}
 	}
-	return count, rows.Err()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return 0, ctx.Err()
 }
