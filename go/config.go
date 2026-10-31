@@ -4,29 +4,34 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type Config struct {
-	Region        string
-	DBHost        string
-	DBPort        string
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	ImageCacheDir string
-	LogLevel      string
+	Region         string
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	ImageFileDir   string
+	ImagePeers     []string
+	ImageTokenFile string
+	LogLevel       string
 }
 
 func ConfigFromEnv() *Config {
 	return &Config{
-		ImageCacheDir: envOrDefault("ISUREAL_IMAGE_CACHE_DIR", "/home/isucon/image-cache"),
-		Region:        envOrDefault("ISUREAL_REGION", "asia"),
-		DBHost:        envOrDefault("ISUREAL_DB_HOST", "127.0.0.1"),
-		DBPort:        envOrDefault("ISUREAL_DB_PORT", "5432"),
-		DBUser:        envOrDefault("ISUREAL_DB_USER", "isureal"),
-		DBPassword:    envOrDefault("ISUREAL_DB_PASSWORD", "isureal"),
-		DBName:        envOrDefault("ISUREAL_DB_NAME", "isureal"),
-		LogLevel:      envOrDefault("ISUREAL_LOG_LEVEL", "debug"),
+		ImageFileDir:   envOrDefault("ISUREAL_IMAGE_FILE_DIR", "/home/isucon/image-files"),
+		ImagePeers:     strings.FieldsFunc(os.Getenv("ISUREAL_IMAGE_PEERS"), func(r rune) bool { return r == ',' }),
+		ImageTokenFile: envOrDefault("ISUREAL_IMAGE_TOKEN_FILE", "/home/isucon/.image-file-token"),
+		Region:         envOrDefault("ISUREAL_REGION", "asia"),
+		DBHost:         envOrDefault("ISUREAL_DB_HOST", "127.0.0.1"),
+		DBPort:         envOrDefault("ISUREAL_DB_PORT", "5432"),
+		DBUser:         envOrDefault("ISUREAL_DB_USER", "isureal"),
+		DBPassword:     envOrDefault("ISUREAL_DB_PASSWORD", "isureal"),
+		DBName:         envOrDefault("ISUREAL_DB_NAME", "isureal"),
+		LogLevel:       envOrDefault("ISUREAL_LOG_LEVEL", "debug"),
 	}
 }
 

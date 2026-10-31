@@ -14,6 +14,7 @@ type HandlerContext struct {
 	DB            *sqlx.DB
 	Config        *Config
 	IPBans        *IPBanList
+	ImageFiles    *ImageFileStore
 	Notifications *notificationHub
 }
 
@@ -38,14 +39,21 @@ func NewServer(config *Config) *echo.Echo {
 		panic("failed to ping database: " + err.Error())
 	}
 
+	imageFiles, err := NewImageFileStore(config)
+	if err != nil {
+		panic(err)
+	}
 	handlerContext := &HandlerContext{
 		DB:            db,
 		Config:        config,
 		IPBans:        &IPBanList{},
+		ImageFiles:    imageFiles,
 		Notifications: newNotificationHub(db),
 	}
 	e.Use(IPBanMiddleware(handlerContext))
 
+	e.PUT("/internal/image-files/:imageId", imageFiles.peerHandler())
+	e.GET("/internal/image-files/:imageId", imageFiles.peerHandler())
 	e.POST("/api/initialize", initializeHandler(handlerContext))
 	e.POST("/api/auth/register", registerHandler(handlerContext))
 	e.POST("/api/auth/login", loginHandler(handlerContext))

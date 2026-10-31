@@ -1,0 +1,293 @@
+package isureal
+
+import (
+	"bytes"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v5"
+	"golang.org/x/sync/singleflight"
+)
+
+const maxImageFileSize = 32 << 20
+
+type ImageFileStore struct {
+	Root   string
+	Peers  []string
+	token  []byte
+	client *http.Client
+	fills  singleflight.Group
+}
+
+func NewImageFileStore(config *Config) (*ImageFileStore, error) {
+	token, err := os.ReadFile(config.ImageTokenFile)
+	if err != nil {
+		return nil, fmt.Errorf("read image replication credentials: %w", err)
+	}
+	token = bytes.TrimSpace(token)
+	if len(token) < 32 {
+		return nil, errors.New("image replication credentials are too short")
+	}
+	if !filepath.IsAbs(config.ImageFileDir) {
+		return nil, errors.New("image file directory must be absolute")
+	}
+	if len(config.ImagePeers) == 0 {
+		return nil, errors.New("no image replica peers configured")
+	}
+	for _, peer := range config.ImagePeers {
+		address, err := url.Parse(peer)
+		if err != nil || (address.Scheme != "http" && address.Scheme != "https") || address.Host == "" || address.User != nil || address.RawQuery != "" || address.Fragment != "" || (address.Path != "" && address.Path != "/") {
+			return nil, errors.New("invalid image replica address")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(config.ImageFileDir, ".export-complete")); err != nil {
+		return nil, errors.New("initial image file export is not complete")
+	}
+	return &ImageFileStore{Root: config.ImageFileDir, Peers: config.ImagePeers, token: token, client: &http.Client{Timeout: 15 * time.Second}}, nil
+}
+
+func imageFileKey(id string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(id))) }
+func ImageFilePath(root, id string) string {
+	key := imageFileKey(id)
+	return filepath.Join(root, key[:2], key)
+}
+
+// WriteImageFile never replaces different bytes for an existing image ID.
+// Exporters may batch fsync; application uploads must use durable=true.
+func WriteImageFile(root, id string, data []byte, durable bool) error {
+	name := ImageFilePath(root, id)
+	if existing, err := os.ReadFile(name); err == nil {
+		if !bytes.Equal(existing, data) {
+			return errors.New("immutable image content mismatch")
+		}
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	dir := filepath.Dir(name)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(dir, ".image-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+	if _, err = f.Write(data); err != nil {
+		return err
+	}
+	if err = f.Chmod(0644); err != nil {
+		return err
+	}
+	if durable {
+		if err = f.Sync(); err != nil {
+			return err
+		}
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+	// link publishes atomically without overwriting an existing immutable object.
+	if err = os.Link(f.Name(), name); err != nil {
+		if !os.IsExist(err) {
+			return err
+		}
+		existing, readErr := os.ReadFile(name)
+		if readErr != nil {
+			return readErr
+		}
+		if !bytes.Equal(existing, data) {
+			return errors.New("concurrent immutable image content mismatch")
+		}
+	}
+	if durable {
+		d, err := os.Open(dir)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		if err = d.Sync(); err != nil {
+			return err
+		}
+		parent, err := os.Open(root)
+		if err != nil {
+			return err
+		}
+		defer parent.Close()
+		return parent.Sync()
+	}
+	return nil
+}
+
+func (s *ImageFileStore) peerRequest(ctx context.Context, peer, method, id string, data []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(peer, "/")+"/internal/image-files/"+id, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+	digest := fmt.Sprintf("%x", sha256.Sum256(data))
+	req.Header.Set("X-Image-Time", timestamp)
+	req.Header.Set("X-Image-Digest", digest)
+	req.Header.Set("X-Image-Signature", s.signature(method, id, timestamp, digest))
+	return s.client.Do(req)
+}
+func (s *ImageFileStore) signature(method, id, timestamp, digest string) string {
+	mac := hmac.New(sha256.New, s.token)
+	fmt.Fprintf(mac, "%s\n%s\n%s\n%s", method, id, timestamp, digest)
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// At least one peer must acknowledge a durable copy before metadata is committed.
+func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error {
+	if len(data) > maxImageFileSize {
+		return errors.New("image exceeds file limit")
+	}
+	if err := WriteImageFile(s.Root, id, data, true); err != nil {
+		return err
+	}
+	if len(s.Peers) == 0 {
+		return errors.New("no image replica peers configured")
+	}
+	results := make(chan bool, len(s.Peers))
+	for _, peer := range s.Peers {
+		go func(peer string) {
+			replicaCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+			defer cancel()
+			response, err := s.peerRequest(replicaCtx, peer, http.MethodPut, id, data)
+			ok := err == nil
+			if response != nil {
+				ok = ok && response.StatusCode == http.StatusNoContent
+				response.Body.Close()
+			}
+			results <- ok
+		}(peer)
+	}
+	for range s.Peers {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ok := <-results:
+			if ok {
+				return nil
+			}
+		}
+	}
+	return errors.New("image replication failed: no durable peer copy")
+}
+
+// Ensure reads local files or another file replica; it never reads DB image bytes.
+func (s *ImageFileStore) Ensure(ctx context.Context, id string) (string, error) {
+	key := imageFileKey(id)
+	name := ImageFilePath(s.Root, id)
+	if info, err := os.Stat(name); err == nil && info.Mode().IsRegular() {
+		return "/_internal/image-files/" + key[:2] + "/" + key, nil
+	}
+	result := s.fills.DoChan(id, func() (any, error) {
+		for _, peer := range s.Peers {
+			response, err := s.peerRequest(ctx, peer, http.MethodGet, id, nil)
+			if err != nil {
+				continue
+			}
+			if response.StatusCode != http.StatusOK {
+				response.Body.Close()
+				continue
+			}
+			data, err := io.ReadAll(io.LimitReader(response.Body, maxImageFileSize+1))
+			response.Body.Close()
+			if err != nil || len(data) > maxImageFileSize {
+				continue
+			}
+			digest := fmt.Sprintf("%x", sha256.Sum256(data))
+			got, err := hex.DecodeString(response.Header.Get("X-Image-Signature"))
+			want, _ := hex.DecodeString(s.signature("RESPONSE", id, response.Request.Header.Get("X-Image-Time"), digest))
+			if err != nil || !hmac.Equal(got, want) {
+				continue
+			}
+			if err := WriteImageFile(s.Root, id, data, true); err != nil {
+				return nil, err
+			}
+			return nil, nil
+		}
+		return nil, errors.New("image file unavailable on all replicas")
+	})
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case done := <-result:
+		if done.Err != nil {
+			return "", done.Err
+		}
+		return "/_internal/image-files/" + key[:2] + "/" + key, nil
+	}
+}
+func (s *ImageFileStore) Read(ctx context.Context, id string) ([]byte, error) {
+	if _, err := s.Ensure(ctx, id); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(ImageFilePath(s.Root, id))
+}
+
+func (s *ImageFileStore) peerHandler() echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		id := c.Param("imageId")
+		parsed, err := uuid.Parse(id)
+		if err != nil || parsed.String() != id {
+			return c.NoContent(http.StatusForbidden)
+		}
+		timestamp := c.Request().Header.Get("X-Image-Time")
+		seconds, err := strconv.ParseInt(timestamp, 10, 64)
+		if err != nil || time.Since(time.Unix(seconds, 0)) > 30*time.Second || time.Until(time.Unix(seconds, 0)) > 30*time.Second {
+			return c.NoContent(http.StatusForbidden)
+		}
+		digest := c.Request().Header.Get("X-Image-Digest")
+		got, err := hex.DecodeString(c.Request().Header.Get("X-Image-Signature"))
+		if err != nil {
+			return c.NoContent(http.StatusForbidden)
+		}
+		want, _ := hex.DecodeString(s.signature(c.Request().Method, id, timestamp, digest))
+		if !hmac.Equal(got, want) {
+			return c.NoContent(http.StatusForbidden)
+		}
+		if c.Request().Method == http.MethodGet {
+			c.Response().Header().Set("Cache-Control", "no-store")
+			data, err := os.ReadFile(ImageFilePath(s.Root, id))
+			if os.IsNotExist(err) {
+				return c.NoContent(http.StatusNotFound)
+			}
+			if err != nil {
+				return err
+			}
+			digest := fmt.Sprintf("%x", sha256.Sum256(data))
+			c.Response().Header().Set("X-Image-Signature", s.signature("RESPONSE", id, timestamp, digest))
+			return c.Blob(http.StatusOK, "application/octet-stream", data)
+		}
+		data, err := io.ReadAll(io.LimitReader(c.Request().Body, maxImageFileSize+1))
+		if err != nil {
+			return err
+		}
+		if len(data) > maxImageFileSize {
+			return c.NoContent(http.StatusRequestEntityTooLarge)
+		}
+		if fmt.Sprintf("%x", sha256.Sum256(data)) != digest {
+			return c.NoContent(http.StatusForbidden)
+		}
+		if err := WriteImageFile(s.Root, id, data, true); err != nil {
+			return err
+		}
+		return c.NoContent(http.StatusNoContent)
+	}
+}

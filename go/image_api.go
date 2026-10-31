@@ -64,14 +64,11 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 
 		// 削除状態を毎回確認する。即時反映も5秒以内の許容範囲に含まれる。
 		var object struct {
-			Generation string    `db:"generation"`
-			CreatedAt  time.Time `db:"created_at"`
-			MediaType  string    `db:"media_type"`
+			MediaType string `db:"media_type"`
 		}
-		err = h.DB.GetContext(ctx, &object, `
-   SELECT i.media_type, i.created_at, b.generation::text AS generation
+		const visibilityQuery = `
+   SELECT i.media_type
    FROM image_objects i JOIN users u ON u.id = i.owner_user_id AND u.status = 'active'
-   CROSS JOIN image_cache_generation b
    WHERE i.id = $1 AND (
      u.profile_image_id = i.id
      OR EXISTS (
@@ -85,7 +82,9 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
        WHERE r.image_id = i.id AND r.reactor_id = u.id AND r.replaced_at IS NULL AND r.deleted_at IS NULL
      )
    )
-  `, input.ImageID)
+  `
+		checkedAt := time.Now()
+		err = h.DB.GetContext(ctx, &object, visibilityQuery, input.ImageID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
@@ -95,18 +94,20 @@ func getImageHandler(h *HandlerContext) echo.HandlerFunc {
 		if exp <= time.Now().Unix() {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
-		cacheKey := imageCacheKey(object.Generation, input.ImageID, object.CreatedAt)
-		uri, err := localImageCache.ensure(ctx, h.Config.ImageCacheDir, cacheKey, func() ([]byte, error) {
-			var data []byte
-			err := h.DB.GetContext(ctx, &data, `SELECT data FROM image_objects WHERE id=$1 AND created_at=$2`, input.ImageID, object.CreatedAt)
-			return data, err
-		})
-		if errors.Is(err, sql.ErrNoRows) {
-			return NewAPIError(http.StatusForbidden, "image_forbidden")
-		}
+		uri, err := h.ImageFiles.Ensure(ctx, input.ImageID)
 		if err != nil {
 			return err
 		}
+
+		// A slow replica fetch must not extend the deletion grace period.
+		if time.Since(checkedAt) >= time.Second {
+			if err := h.DB.GetContext(ctx, &object, visibilityQuery, input.ImageID); errors.Is(err, sql.ErrNoRows) {
+				return NewAPIError(http.StatusForbidden, "image_forbidden")
+			} else if err != nil {
+				return err
+			}
+		}
+
 		if exp <= time.Now().Unix() {
 			return NewAPIError(http.StatusForbidden, "image_forbidden")
 		}
