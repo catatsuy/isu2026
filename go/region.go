@@ -13,7 +13,7 @@ func RegionMiddleware(h *HandlerContext) echo.MiddlewareFunc {
 			if session == nil {
 				return NewAPIError(http.StatusUnauthorized, "invalid_session")
 			}
-			if session.Region != h.Config.Region {
+			if session.Region != forwardedRegion(c, h.Config) {
 				return NewAPIError(http.StatusForbidden, "region_mismatch")
 			}
 			return next(c)

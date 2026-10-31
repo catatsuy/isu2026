@@ -1,0 +1,283 @@
+Linux 7.0.0-1014-aws (ip-192-168-3-10) 	10/31/26 	_x86_64_	(2 CPU)
+
+05:07:26        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:27        all      0.00      0.00      0.50      1.00      0.00     98.51
+
+05:07:26    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:27      3223176   3345584    226304      5.80     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:26          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:27        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:27        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:27        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:27        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:27      nvme0n1     50.00      0.00   3996.00      0.00     79.92      0.07      1.46      0.80
+
+05:07:27        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:28        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:27    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:28      3223216   3345624    226264      5.80     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:27          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:28        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:28        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:28        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:28        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:28      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:28        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:29        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:28    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:29      3224376   3346784    225104      5.77     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:28          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:29        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:29        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:29        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:29        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:29      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:29        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:30        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:29    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:30      3225436   3347844    224044      5.74     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:29          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:30        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:30        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:30        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:30        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:30      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:30        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:31        all      0.50      0.00      0.00      0.00      0.00     99.50
+
+05:07:30    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:31      3226364   3348772    223116      5.72     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:30          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:31        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:31        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:31        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:31        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:31      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:31        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:32        all      0.50      0.00      0.50      0.00      0.00     99.01
+
+05:07:31    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:32      3226916   3349324    222564      5.70     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:31          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:32        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:32        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:32        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:32        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:32      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:32        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:33        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:32    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:33      3226916   3349324    222564      5.70     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:32          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:33        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:33        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:33        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:33        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:33      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:33        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:34        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:33    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:34      3226916   3349324    222564      5.70     23420    355028   1300676     33.32    344040    125772      3368
+
+05:07:33          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:34        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:34        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:34        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:34        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:34      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:34        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:35        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:34    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:35      3227908   3350416    221272      5.67     23420    355328   1300676     33.32    344240    125872      4524
+
+05:07:34          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:35        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:35        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:35        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:35        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:35      nvme0n1     13.00    100.00    104.00      0.00     15.69      0.01      0.92      0.50
+
+05:07:35        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:36        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:35    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:36      3227896   3350504    221260      5.67     23420    355352   1300676     33.32    344272    125972      4524
+
+05:07:35          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:36        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:36        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:36        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:36        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:36      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:36        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:37        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:36    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:37      3227896   3350504    221260      5.67     23420    355352   1300676     33.32    344272    125972      4524
+
+05:07:36          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:37        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:37        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:37        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:37        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:37      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:37        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:38        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:37    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:38      3227896   3350504    221260      5.67     23420    355352   1300676     33.32    344272    125972      4524
+
+05:07:37          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:38        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:38        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:38        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:38        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:38      nvme0n1      1.00      0.00     12.00      0.00     12.00      0.00      1.00      0.10
+
+05:07:38        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:39        all      0.00      0.00      0.50      0.00      0.00     99.50
+
+05:07:38    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:39      3227896   3350504    221260      5.67     23420    355352   1300676     33.32    344272    125972      4512
+
+05:07:38          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:39        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:39        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:39        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:39        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:39      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:39        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:40        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:39    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:40      3227896   3350504    221260      5.67     23420    355352   1300676     33.32    344288    125972      4644
+
+05:07:39          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:40        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:40        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:40        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:40        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:40      nvme0n1      1.00      0.00      4.00      0.00      4.00      0.00      0.00      0.00
+
+05:07:40        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:41        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:40    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:41      3227896   3350504    221260      5.67     23428    355344   1300676     33.32    344288    125972      4644
+
+05:07:40          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:41        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:41        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:41        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:41        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:41      nvme0n1      3.00      0.00     60.00      0.00     20.00      0.00      1.33      0.30
+
+05:07:41        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:42        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:41    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:42      3227896   3350504    221252      5.67     23428    355352   1300676     33.32    344288    125972      4688
+
+05:07:41          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:42        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:42        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:42        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:42        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:42      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:42        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:43        all      0.00      0.00      0.50      0.00      0.00     99.50
+
+05:07:42    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:43      3227896   3350504    221252      5.67     23428    355352   1300676     33.32    344288    125972      4688
+
+05:07:42          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:43        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:43        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:43        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:43        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:43      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:43        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:44        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:43    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:44      3227896   3350504    221252      5.67     23428    355352   1300676     33.32    344388    125972      4688
+
+05:07:43          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:44        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:44        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:44        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:44        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:44      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:44        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:45        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:44    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:45      3227896   3350512    221252      5.67     23428    355352   1300676     33.32    344404    125980      4688
+
+05:07:44          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:45        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:45        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:45        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:45        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:45      nvme0n1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+05:07:45        CPU     %user     %nice   %system   %iowait    %steal     %idle
+05:07:46        all      0.00      0.00      0.00      0.00      0.00    100.00
+
+05:07:45    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+05:07:46      3227896   3350512    221252      5.67     23428    355352   1300676     33.32    344404    125980      4688
+
+05:07:45          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+05:07:46        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:46        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:46        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:46        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+05:07:46      nvme0n1      1.00      0.00      4.00      0.00      4.00      0.00      0.00      0.10
+
+Average:        CPU     %user     %nice   %system   %iowait    %steal     %idle
+Average:        all      0.05      0.00      0.10      0.05      0.00     99.80
+
+Average:    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty
+Average:      3226904   3349428    222381      5.70     23422    355221   1300676     33.32    344200    125888      4114
+
+Average:          DEV       tps     rkB/s     wkB/s     dkB/s   areq-sz    aqu-sz     await     %util
+Average:        loop0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        loop1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        loop2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:        loop3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      nvme0n1      3.45      5.00    209.00      0.00     62.03      0.00      1.30      0.09
+    PID %CPU %MEM   RSS COMMAND
+    845  0.0  1.2 50436 postgres
+    985  0.0  0.1  6572 postgres
+    986  0.0  0.2 10396 postgres
+    987  0.0  0.3 12344 postgres
+   1007  0.0  0.3 14648 postgres
+   3603  0.0  0.5 21492 postgres
+   3972  0.0  0.5 21608 postgres
+   3973  0.0  0.5 19968 postgres

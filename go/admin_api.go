@@ -33,7 +33,7 @@ func adminLoginHandler(h *HandlerContext) echo.HandlerFunc {
 			ID           string `db:"id"`
 			PasswordHash string `db:"password_hash"`
 		}
-		err := h.DB.GetContext(c.Request().Context(), &administrator,
+		err := h.WriteDB().GetContext(c.Request().Context(), &administrator,
 			`SELECT id, password_hash FROM administrators WHERE username = $1`, input.Username)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusUnauthorized, "invalid_credentials")
@@ -45,7 +45,7 @@ func adminLoginHandler(h *HandlerContext) echo.HandlerFunc {
 		if administrator.PasswordHash != hex.EncodeToString(hash[:]) {
 			return NewAPIError(http.StatusUnauthorized, "invalid_credentials")
 		}
-		session, err := CreateAdminSession(h.DB, administrator.ID)
+		session, err := CreateAdminSession(h.WriteDB(), administrator.ID)
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func adminLogoutHandler(h *HandlerContext) echo.HandlerFunc {
 		if session == nil {
 			return NewAPIError(http.StatusUnauthorized, "invalid_administrator_session")
 		}
-		if err := InvalidateAdminSession(h.DB, session.AdministratorID, session.TokenHash); err != nil {
+		if err := InvalidateAdminSession(h.WriteDB(), session.AdministratorID, session.TokenHash); err != nil {
 			return err
 		}
 		return c.NoContent(http.StatusNoContent)

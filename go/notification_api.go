@@ -24,7 +24,7 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 		session := GetSession(c)
 		userID := session.UserID
 		var connectedAt time.Time
-		if err := h.DB.GetContext(ctx, &connectedAt, `SELECT clock_timestamp()`); err != nil {
+		if err := h.WriteDB().GetContext(ctx, &connectedAt, `SELECT clock_timestamp()`); err != nil {
 			return err
 		}
 		response := c.Response()
@@ -55,7 +55,7 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 			default:
 			}
 			var notification getNotificationsResponse
-			err := h.DB.GetContext(ctx, &notification, `
+			err := h.WriteDB().GetContext(ctx, &notification, `
     SELECT n.id, n.posting_window_id, w.region, n.created_at
     FROM notifications n JOIN posting_windows w ON w.id = n.posting_window_id
     WHERE n.user_id = $1 AND n.created_at > $2 AND w.ended_at IS NULL

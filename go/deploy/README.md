@@ -57,3 +57,7 @@ nginxの画像配信やDB整合性の検証、ベンチマークの代用には�
 [image-files.md](image-files.md) の全件書き出し・DB変更・nginx設定・複製設定を完了してください。
 移行後の新規画像はDBのdata列がNULLになるため、ファイル移行前の旧版へ戻す場合は
 画像をDBへ復元する手順が別途必要です。
+
+PostgreSQLの読み取りReplicaについては[read-replicas.md](read-replicas.md)を参照してください。
+最新構成は[asia-api.md](asia-api.md)を参照してください。
+海外の主要データ取得はローカルReplica、認証・現在の権限はPrimaryです。initializeは両Replicaの追従を待ちます。

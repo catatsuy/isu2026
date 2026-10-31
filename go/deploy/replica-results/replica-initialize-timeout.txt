@@ -1,0 +1,9 @@
+status=500 total_seconds=10.001041
+Oct 31 05:14:51 ip-192-168-1-10 isureal[5095]: 2026/10/31 05:14:51 initialize replica_wait=8.979620967s
+Oct 31 05:14:51 ip-192-168-1-10 isureal[5095]: {"time":"2026-10-31T05:14:51.722645485Z","level":"ERROR","msg":"request failed","error":"timeout: context deadline exceeded"}
+Oct 31 05:13:57 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:13:57 replica disabled: replica identity/replay/receiver not ready
+Oct 31 05:14:00 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:14:00 replica reads name=isu03 local=0 fallback=0 policy_primary=1 healthy=false
+Oct 31 05:14:10 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:14:10 replica reads name=isu03 local=0 fallback=0 policy_primary=1 healthy=false
+Oct 31 05:14:20 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:14:20 replica reads name=isu03 local=0 fallback=0 policy_primary=1 healthy=false
+Oct 31 05:14:41 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:14:41 replica disabled: replica identity/replay/receiver not ready
+Oct 31 05:14:50 ip-192-168-3-10 isureal[4631]: 2026/10/31 05:14:50 replica reads name=isu03 local=0 fallback=0 policy_primary=1 healthy=false

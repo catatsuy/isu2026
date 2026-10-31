@@ -35,6 +35,8 @@ type ImageFileStore struct {
 	replicationCancel context.CancelFunc
 	replicationWG     sync.WaitGroup
 	wake              chan struct{}
+	dirtyMu           sync.Mutex
+	dirty             [256]bool
 	replicationErr    error
 	replicationLocks  [256]sync.Mutex
 }
@@ -253,10 +255,7 @@ func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error
 	if err != nil {
 		return err
 	}
-	select {
-	case s.wake <- struct{}{}:
-	default:
-	}
+	s.markReplicationShard(ImageFilePath(s.jobRoot(), id))
 	return nil
 }
 

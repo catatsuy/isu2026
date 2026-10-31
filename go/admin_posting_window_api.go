@@ -38,7 +38,7 @@ func openPostingWindowHandler(h *HandlerContext) echo.HandlerFunc {
 			seconds = *input.OnTimeSeconds
 		}
 		ctx := c.Request().Context()
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

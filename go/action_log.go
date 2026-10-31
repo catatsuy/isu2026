@@ -58,11 +58,18 @@ var logLevelRanks = map[string]int{"debug": 0, "info": 1, "error": 2}
 func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
+			if c.Path() == primaryRPCPath {
+				return next(c)
+			}
+			c.Set("action_log", true)
 			err := next(c)
 			if err != nil {
 				c.Echo().HTTPErrorHandler(c, err)
 			}
 			_, status := echo.ResolveResponseStatus(c.Response(), err)
+			if c.Get("primary_forwarded") == true && status < 500 {
+				return nil
+			}
 
 			level := "info"
 			switch {
@@ -71,7 +78,7 @@ func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc 
 			case c.Request().Method == http.MethodGet && !(status == http.StatusForbidden && c.Get("abuse") == "invalid_signature"):
 				level = "debug"
 			}
-			if logLevelRanks[level] < logLevelRanks[minLevel] {
+			if status < 400 && logLevelRanks[level] < logLevelRanks[minLevel] {
 				return nil
 			}
 
@@ -99,6 +106,9 @@ func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc 
 			abuse, _ := c.Get("abuse").(string)
 			if abuse != "" {
 				entry["abuse"] = abuse
+			}
+			if status >= http.StatusInternalServerError && err != nil {
+				entry["error"] = err.Error()
 			}
 			line, marshalErr := json.Marshal(entry)
 			if marshalErr != nil {

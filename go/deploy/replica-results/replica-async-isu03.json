@@ -1,0 +1,36 @@
+{
+  "phase": "async",
+  "region": "america",
+  "metrics": {
+    "POST /api/auth/register": {
+      "n": 1,
+      "p50_ms": 524.331,
+      "p95_ms": 524.331,
+      "p99_ms": 524.331
+    },
+    "POST /api/auth/login": {
+      "n": 10,
+      "p50_ms": 607.344,
+      "p95_ms": 609.007,
+      "p99_ms": 609.007
+    },
+    "GET /api/me": {
+      "n": 61,
+      "p50_ms": 202.876,
+      "p95_ms": 203.725,
+      "p99_ms": 216.978
+    },
+    "PATCH /api/me": {
+      "n": 10,
+      "p50_ms": 506.834,
+      "p95_ms": 607.801,
+      "p99_ms": 607.801
+    },
+    "POST /api/auth/logout": {
+      "n": 1,
+      "p50_ms": 506.74,
+      "p95_ms": 506.74,
+      "p99_ms": 506.74
+    }
+  }
+}

@@ -3,6 +3,7 @@ package isureal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -54,17 +55,33 @@ func (s *ImageFileStore) startReplication() error {
 			defer s.replicationWG.Done()
 			// Only active workers are tracked. The disk is the queue; scans use bounded
 			// batches rather than loading all pending image IDs or bytes into memory.
+			// Initially scan every shard to recover durable markers. Afterwards scan only
+			// changed shards and shards whose earliest retry has become due.
 			active := make(map[string]bool)
-			ticker := time.NewTicker(time.Second)
-			defer ticker.Stop()
+			var due [256]time.Time
+			timer := time.NewTimer(0)
+			defer timer.Stop()
 			for {
+				s.dirtyMu.Lock()
+				for i, dirty := range s.dirty {
+					if dirty {
+						due[i] = time.Time{}
+						s.dirty[i] = false
+					}
+				}
+				s.dirtyMu.Unlock()
 				for i := 0; i < 256; i++ {
+					if due[i].After(time.Now()) {
+						continue
+					}
+					due[i] = time.Now().Add(time.Duration(1<<63 - 1))
 					dir := filepath.Join(s.jobRoot(), shardName(i))
 					f, err := os.Open(dir)
 					if os.IsNotExist(err) {
 						continue
 					}
 					if err != nil {
+						due[i] = time.Now().Add(time.Second)
 						log.Printf("image replication scan: %v", err)
 						continue
 					}
@@ -81,7 +98,14 @@ func (s *ImageFileStore) startReplication() error {
 								continue
 							}
 							info, statErr := entry.Info()
-							if statErr != nil || info.ModTime().After(time.Now()) {
+							if statErr != nil {
+								due[i] = time.Now().Add(time.Second)
+								continue
+							}
+							if info.ModTime().After(time.Now()) {
+								if info.ModTime().Before(due[i]) {
+									due[i] = info.ModTime()
+								}
 								continue
 							}
 							name := filepath.Join(dir, entry.Name())
@@ -89,6 +113,7 @@ func (s *ImageFileStore) startReplication() error {
 								select {
 								case done := <-completed:
 									delete(active, done)
+									s.markReplicationShard(done)
 								default:
 									goto drained
 								}
@@ -106,6 +131,7 @@ func (s *ImageFileStore) startReplication() error {
 									return
 								case done := <-completed:
 									delete(active, done)
+									s.markReplicationShard(done)
 								case jobs <- name:
 									active[name] = true
 									goto dispatched
@@ -115,6 +141,7 @@ func (s *ImageFileStore) startReplication() error {
 						}
 						if err != nil {
 							if err != io.EOF {
+								due[i] = time.Now().Add(time.Second)
 								log.Printf("image replication scan: %v", err)
 							}
 							break
@@ -122,13 +149,21 @@ func (s *ImageFileStore) startReplication() error {
 					}
 					f.Close()
 				}
+				wait := time.Duration(1<<63 - 1)
+				for _, next := range due {
+					if d := time.Until(next); d < wait {
+						wait = max(d, 0)
+					}
+				}
+				timer.Reset(wait)
 				select {
 				case <-ctx.Done():
 					return
 				case done := <-completed:
 					delete(active, done)
+					s.markReplicationShard(done)
 				case <-s.wake:
-				case <-ticker.C:
+				case <-timer.C:
 				}
 			}
 		}()
@@ -162,10 +197,17 @@ func (s *ImageFileStore) replicateJob(ctx context.Context, name string) {
 	err := s.replicateAttempt(ctx, name)
 	lock := s.replicationJobLock(name)
 	lock.Lock()
-	defer lock.Unlock()
+	var fallback time.Duration
+	defer func() {
+		lock.Unlock()
+		if fallback > 0 {
+			waitReplicationRetry(ctx, fallback)
+		}
+	}()
 	if err == nil {
 		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
 			log.Printf("image replication remove %s: %v", name, err)
+			fallback = time.Second
 		}
 		os.Remove(retryName)
 		// A crash before this sync can only cause a harmless duplicate PUT.
@@ -197,13 +239,17 @@ func (s *ImageFileStore) replicateJob(ctx context.Context, name string) {
 		seconds = 60
 	}
 	delay := time.Duration(seconds) * time.Second
-	log.Printf("image replication %s failed (retry in %s): %v", name, delay, err)
+	if seconds == 1 || seconds == 60 {
+		log.Printf("image replication %s failed (retry in %s): %v", name, delay, err)
+	}
 	if err := os.WriteFile(retryName, []byte(strconv.Itoa(seconds)), 0600); err != nil {
 		log.Printf("image replication retry metadata: %v", err)
 	}
 	next := time.Now().Add(delay)
 	if err := os.Chtimes(name, next, next); err != nil {
 		log.Printf("image replication retry schedule: %v", err)
+		// Preserve backoff even if the filesystem cannot persist its deadline.
+		fallback = delay
 	}
 }
 
@@ -222,7 +268,7 @@ func (s *ImageFileStore) replicateAttempt(ctx context.Context, name string) erro
 	if len(data) > maxImageFileSize {
 		return errors.New("image exceeds file limit")
 	}
-	failed := 0
+	var failures []error
 	for _, peer := range s.Peers {
 		attemptCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		response, err := s.peerRequest(attemptCtx, peer, http.MethodPut, string(id), data)
@@ -232,12 +278,11 @@ func (s *ImageFileStore) replicateAttempt(ctx context.Context, name string) erro
 		}
 		cancel()
 		if !ok {
-			log.Printf("image replication id=%s peer=%s: response=%v error=%v", id, peer, statusCode(response), err)
-			failed++
+			failures = append(failures, fmt.Errorf("peer=%s status=%d error=%v", peer, statusCode(response), err))
 		}
 	}
-	if failed != 0 {
-		return errors.New("peer copies incomplete")
+	if len(failures) != 0 {
+		return errors.Join(failures...)
 	}
 	return nil
 }
@@ -247,4 +292,24 @@ func statusCode(response *http.Response) int {
 		return 0
 	}
 	return response.StatusCode
+}
+
+func (s *ImageFileStore) markReplicationShard(name string) {
+	shard, _ := strconv.ParseUint(filepath.Base(name)[:2], 16, 8)
+	s.dirtyMu.Lock()
+	s.dirty[shard] = true
+	s.dirtyMu.Unlock()
+	select {
+	case s.wake <- struct{}{}:
+	default:
+	}
+}
+
+func waitReplicationRetry(ctx context.Context, delay time.Duration) {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+	case <-timer.C:
+	}
 }

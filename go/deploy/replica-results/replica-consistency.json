@@ -1,0 +1,11 @@
+{
+  "passed": [
+    "Primary register/login immediately visible on both regional replicas",
+    "Post COMMIT immediately visible from other region",
+    "Visibility change immediately enforced in other region",
+    "Unfriend immediately enforced in other region",
+    "Block immediately enforced in other region",
+    "Session replacement on Primary immediately invalidates replica authentication",
+    "Account deletion immediately invalidates replica authentication"
+  ]
+}

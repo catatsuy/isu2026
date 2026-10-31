@@ -87,7 +87,7 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 		secretKey := uuid.NewString()
 		hash := sha256.Sum256([]byte(secretKey))
 		ctx := c.Request().Context()
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 			// Release the aborted transaction before consulting the catalog, even
 			// when the connection pool has only one connection.
 			tx.Rollback()
-			if isUsernameConflict(ctx, h.DB, err) {
+			if isUsernameConflict(ctx, h.WriteDB(), err) {
 				return NewAPIError(http.StatusConflict, "username_taken")
 			}
 			return err
@@ -128,7 +128,7 @@ func loginHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		hash := sha256.Sum256([]byte(input.SecretKey))
 		ctx := c.Request().Context()
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func logoutHandler(h *HandlerContext) echo.HandlerFunc {
 		if session == nil {
 			return NewAPIError(http.StatusUnauthorized, "invalid_session")
 		}
-		if err := InvalidateLoginSession(h.DB, session.UserID, session.TokenHash); err != nil {
+		if err := InvalidateLoginSession(h.WriteDB(), session.UserID, session.TokenHash); err != nil {
 			return err
 		}
 		return c.NoContent(http.StatusNoContent)
@@ -171,13 +171,14 @@ func getMeHandler(h *HandlerContext) echo.HandlerFunc {
 		if session == nil {
 			return NewAPIError(http.StatusUnauthorized, "invalid_session")
 		}
-		user, err := getUser(c.Request().Context(), h.DB, session.UserID)
+		user, err := h.readUserPayload(c, session.UserID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return NewAPIError(http.StatusNotFound, "account_not_found")
 		}
 		if err != nil {
 			return err
 		}
+		user.Region = session.Region
 		return c.JSON(http.StatusOK, newGetMeResponse(user))
 	}
 }
@@ -199,7 +200,7 @@ func updateMeHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_profile")
 		}
 		ctx := c.Request().Context()
-		tx, err := h.DB.BeginTxx(ctx, nil)
+		tx, err := h.WriteDB().BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}

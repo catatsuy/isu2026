@@ -1,0 +1,14 @@
+{
+  "passed": [
+    "Primary register/login immediately visible on both regional replicas",
+    "Primary permissions hide private bio before friendship",
+    "Post COMMIT immediately visible from other region",
+    "Visibility change immediately enforced in other region",
+    "Deleted comments are removed from local payload by current Primary state",
+    "Unfriend immediately enforced for posts and private bio in other region",
+    "Block immediately enforced for posts, profiles and local search payloads",
+    "Session replacement on Primary immediately invalidates replica authentication",
+    "Account deletion immediately invalidates replica authentication",
+    "All disposable validation accounts deactivated after tests"
+  ]
+}

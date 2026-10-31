@@ -1,0 +1,33 @@
+isu01 application active/enabled; binary SHA256 6bc1d93b1f489136fd7bfce5c11ed3bd4c4619d301fec874089cb9c4931bdab2
+active
+enabled
+6bc1d93b1f489136fd7bfce5c11ed3bd4c4619d301fec874089cb9c4931bdab2  /home/isucon/webapp/go/isureal
+/dev/root        58G   41G   17G  72% /
+isu03
+active
+enabled
+6bc1d93b1f489136fd7bfce5c11ed3bd4c4619d301fec874089cb9c4931bdab2  /home/isucon/webapp/go/isureal
+/dev/root        58G   41G   17G  72% /
+isu04
+active
+enabled
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit|f|on|
+isu02
+active
+enabled
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit|t|on|
+isu03
+active
+enabled
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit|t|on|
+ application_name | client_addr  |   state   | sync_state | replay_lsn | pending_bytes
+------------------+--------------+-----------+------------+------------+---------------
+ isu03            | 192.168.3.10 | streaming | async      | 5/51B62980 |             0
+ isu02            | 192.168.2.10 | streaming | async      | 5/51B62980 |             0
+(2 rows)
+
+ slot_name | slot_type | active | wal_status
+-----------+-----------+--------+------------
+ isu02     | physical  | t      | reserved
+ isu03     | physical  | t      | reserved
+(2 rows)

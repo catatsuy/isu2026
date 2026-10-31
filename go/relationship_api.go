@@ -19,7 +19,7 @@ func deleteFriendshipHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.UserID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.UserID)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func followHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.UserID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.UserID)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func unfollowHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.UserID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.UserID)
 		if err != nil {
 			return err
 		}
@@ -123,7 +123,7 @@ func blockHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.UserID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.UserID)
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func unblockHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 		actor := GetSession(c).UserID
-		tx, err := beginRelationshipTx(ctx, h.DB, actor, input.UserID)
+		tx, err := beginRelationshipTx(ctx, h.WriteDB(), actor, input.UserID)
 		if err != nil {
 			return err
 		}
