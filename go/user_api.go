@@ -1,6 +1,7 @@
 package isureal
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v5"
 )
 
@@ -89,20 +92,17 @@ func registerHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer tx.Rollback()
-		// ユーザー名が一意である必要があります。
-		if _, err := tx.ExecContext(ctx, `LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`); err != nil {
-			return err
-		}
-		var exists bool
-		if err := tx.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)`, input.Username); err != nil {
-			return err
-		}
-		if exists {
-			return NewAPIError(http.StatusConflict, "username_taken")
-		}
+		// INSERT takes ROW EXCLUSIVE until commit, which still conflicts with
+		// the Posting Window opener's SHARE ROW EXCLUSIVE notification boundary.
 		userID := uuid.NewString()
 		if _, err := tx.ExecContext(ctx, `INSERT INTO users (id, username, secret_key_hash, display_name, region) VALUES ($1, $2, $3, $4, $5)`,
 			userID, input.Username, hex.EncodeToString(hash[:]), input.DisplayName, input.Region); err != nil {
+			// Release the aborted transaction before consulting the catalog, even
+			// when the connection pool has only one connection.
+			tx.Rollback()
+			if isUsernameConflict(ctx, h.DB, err) {
+				return NewAPIError(http.StatusConflict, "username_taken")
+			}
 			return err
 		}
 		user, err := getUser(ctx, tx, userID)
@@ -231,4 +231,26 @@ func updateMeHandler(h *HandlerContext) echo.HandlerFunc {
 		}
 		return c.JSON(http.StatusOK, updateMeResponse(newGetMeResponse(user)))
 	}
+}
+
+// PostgreSQL reports the unique index name even for standalone UNIQUE indexes.
+// Inspect its key columns rather than assuming the externally managed index name
+// or interpreting localized error detail text. Other unique violations propagate.
+func isUsernameConflict(ctx context.Context, db sqlx.QueryerContext, err error) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23505" || pgErr.TableName != "users" {
+		return false
+	}
+	var matches bool
+	catalogErr := sqlx.GetContext(ctx, db, &matches, `SELECT EXISTS (
+        SELECT 1 FROM pg_index i
+        JOIN pg_class t ON t.oid=i.indrelid
+        JOIN pg_namespace n ON n.oid=t.relnamespace
+        JOIN pg_class idx ON idx.oid=i.indexrelid
+        JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=i.indkey[0]
+        WHERE n.nspname=$1 AND t.relname='users' AND idx.relname=$2
+          AND i.indisunique AND i.indnkeyatts=1 AND a.attname='username'
+          AND i.indexprs IS NULL AND i.indpred IS NULL
+    )`, pgErr.SchemaName, pgErr.ConstraintName)
+	return catalogErr == nil && matches
 }

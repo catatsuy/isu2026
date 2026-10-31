@@ -75,6 +75,12 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 		if actor == post.AuthorID {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
+		// Save immutable bytes (including replication) before taking user locks.
+		// Failed or uncertain commits may leave unreferenced files; keep them.
+		imageID := uuid.NewString()
+		if err := h.ImageFiles.Save(ctx, imageID, data); err != nil {
+			return err
+		}
 		tx, err := beginRelationshipTx(ctx, h.DB, actor, post.AuthorID)
 		if err != nil {
 			return err
@@ -88,10 +94,6 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusForbidden, "interaction_forbidden")
 		}
 		if _, err := tx.ExecContext(ctx, `UPDATE realmojis SET replaced_at=clock_timestamp() WHERE post_id=$1 AND reactor_id=$2 AND replaced_at IS NULL AND deleted_at IS NULL`, post.ID, actor); err != nil {
-			return err
-		}
-		imageID := uuid.NewString()
-		if err := h.ImageFiles.Save(ctx, imageID, data); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects(id,owner_user_id,data,media_type) VALUES($1,$2,$3,'image/jpeg')`, imageID, actor, nil); err != nil {
