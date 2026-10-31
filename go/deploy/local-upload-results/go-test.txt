@@ -1,0 +1,4 @@
+ok  	example.com/isureal-company/isureal	21.509s
+?   	example.com/isureal-company/isureal/cmd/export-images	[no test files]
+?   	example.com/isureal-company/isureal/cmd/isureal	[no test files]
+?   	example.com/isureal-company/isureal/deploy	[no test files]

@@ -24,7 +24,7 @@ func TestAsiaForwardPreservesBodyIPAndRegion(t *testing.T) {
 	asia.HTTPErrorHandler = APIErrorHandler
 	asia.Use(AsiaRoutingMiddleware(h))
 	writes := 0
-	asia.POST("/api/posts", func(c *echo.Context) error {
+	asia.POST("/api/friend-requests", func(c *echo.Context) error {
 		if c.RealIP() != "203.0.113.7" {
 			t.Error("original IP lost")
 		}
@@ -45,8 +45,8 @@ func TestAsiaForwardPreservesBodyIPAndRegion(t *testing.T) {
 	foreign.HTTPErrorHandler = APIErrorHandler
 	foreign.IPExtractor = extractClientIP
 	foreign.Use(AsiaRoutingMiddleware(&HandlerContext{Config: &Config{Region: "europe"}, PrimaryAPI: client}))
-	foreign.POST("/api/posts", func(c *echo.Context) error { t.Fatal("foreign write handler executed"); return nil })
-	req := httptest.NewRequest("POST", "/api/posts", bytes.NewBufferString("multipart-test-data"))
+	foreign.POST("/api/friend-requests", func(c *echo.Context) error { t.Fatal("foreign write handler executed"); return nil })
+	req := httptest.NewRequest("POST", "/api/friend-requests", bytes.NewBufferString("multipart-test-data"))
 	req.Header.Set("X-Client-IP", "203.0.113.7")
 	res := httptest.NewRecorder()
 	foreign.ServeHTTP(res, req)

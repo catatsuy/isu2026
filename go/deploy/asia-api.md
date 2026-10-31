@@ -1,7 +1,7 @@
 # 全 API を asia に集約
 
 - isu01 (asia) だけが isu04 の Primary へ SQL を実行する。
-- isu02・isu03 は GET・画像・通知ストリームを含む全 `/api/` リクエストを asia へ転送する。海外では DB 接続プールも Replica 監視も起動しない。
+- isu02・isu03 は GET・画像・通知ストリームを含む `/api/` リクエストを asia へ転送する。画像付き更新3 APIは海外で検証・永続保存し、メタデータだけを asia へ送る（[詳細](local-image-upload.md)）。海外では DB 接続プールも Replica 監視も起動しない。
 - 海外では `ISUREAL_PRIMARY_API_URL=http://192.168.1.10` が必須。未設定なら起動を拒否する。
 - Replica 環境変数が残っていても使用しない。initialize は Primary だけを初期化し、Replica の再生完了を待たない。
 - `/internal/image-files/` のファイル複製は独立して継続する。
