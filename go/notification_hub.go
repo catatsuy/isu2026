@@ -18,6 +18,7 @@ type notificationSubscription struct {
 	wake           chan struct{}
 	done           chan struct{}
 	ready          chan struct{}
+	retry          bool
 	initialized    bool
 }
 
@@ -71,6 +72,15 @@ func (h *notificationHub) subscribe(userID, region string) *notificationSubscrip
 	return s
 }
 
+// Retry a failed notification read after the next successful shared poll.
+func (h *notificationHub) retry(s *notificationSubscription) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.subscribers[s]; ok {
+		s.retry = true
+	}
+}
+
 func (h *notificationHub) unsubscribe(s *notificationSubscription) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -121,27 +131,32 @@ func (h *notificationHub) run(ctx context.Context) {
 			h.mu.Unlock()
 			return
 		}
-		for _, s := range snapshot {
-			if _, ok := h.subscribers[s]; !ok {
-				continue
-			}
-			region, active := users[s.userID]
-			if err != nil || !active || region != s.region {
-				h.remove(s)
-				continue
-			}
-			if s.initialized && windows[s.region] != previous[s.region] {
-				select {
-				case s.wake <- struct{}{}:
-				default:
+		// A failed poll says nothing about account validity or window changes.
+		// Keep subscriptions and the last successful snapshot until retry.
+		if err == nil {
+			for _, s := range snapshot {
+				if _, ok := h.subscribers[s]; !ok {
+					continue
+				}
+				region, active := users[s.userID]
+				if !active || region != s.region {
+					h.remove(s)
+					continue
+				}
+				if s.retry || (s.initialized && windows[s.region] != previous[s.region]) {
+					s.retry = false
+					select {
+					case s.wake <- struct{}{}:
+					default:
+					}
+				}
+				if !s.initialized {
+					s.initialized = true
+					close(s.ready)
 				}
 			}
-			if !s.initialized {
-				s.initialized = true
-				close(s.ready)
-			}
+			previous = windows
 		}
-		previous = windows
 		h.mu.Unlock()
 		select {
 		case <-ctx.Done():

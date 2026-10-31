@@ -164,3 +164,48 @@ func TestNotificationHubConcurrentSubscriptions(t *testing.T) {
 		t.Fatal("subscriptions leaked")
 	}
 }
+
+func TestNotificationHubRecoversFromPollErrors(t *testing.T) {
+	var mu sync.Mutex
+	fail := false
+	window := "first"
+	failed := make(chan struct{}, 1)
+	h := &notificationHub{poll: func(context.Context, []string) (map[string]string, map[string]string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if fail {
+			select {
+			case failed <- struct{}{}:
+			default:
+			}
+			return nil, nil, context.DeadlineExceeded
+		}
+		return map[string]string{"jp": window}, map[string]string{"one": "jp", "two": "jp"}, nil
+	}}
+	one := h.subscribe("one", "jp")
+	defer h.unsubscribe(one)
+	awaitNotificationSignal(t, one.ready)
+	mu.Lock()
+	fail = true
+	mu.Unlock()
+	awaitNotificationSignal(t, failed)
+	two := h.subscribe("two", "jp")
+	defer h.unsubscribe(two)
+	awaitNotificationSignal(t, failed)
+	for _, s := range []*notificationSubscription{one, two} {
+		select {
+		case <-s.done:
+			t.Fatal("poll error disconnected subscriber")
+		default:
+		}
+	}
+	mu.Lock()
+	fail = false
+	window = "second"
+	mu.Unlock()
+	awaitNotificationSignal(t, one.wake)
+	awaitNotificationSignal(t, two.ready)
+	// A failed handler SELECT retries after a shared poll, even without a change.
+	h.retry(one)
+	awaitNotificationSignal(t, one.wake)
+}

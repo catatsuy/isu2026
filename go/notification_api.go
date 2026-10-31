@@ -77,7 +77,10 @@ func getNotificationsHandler(h *HandlerContext) echo.HandlerFunc {
 				if ctx.Err() == nil {
 					c.Logger().Error("failed to get notification", "error", err)
 				}
-				return nil
+				if ctx.Err() != nil {
+					return nil
+				}
+				h.Notifications.retry(subscription)
 			}
 			select {
 			case <-ctx.Done():

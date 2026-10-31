@@ -50,14 +50,11 @@ func (c imageConn) QueryContext(_ context.Context, query string, _ []driver.Name
 	f := c.fixture
 	f.queries++
 	switch {
-	case strings.Contains(query, "SELECT u.secret_key_hash"):
-		return &imageRows{columns: []string{"secret_key_hash"}, values: []driver.Value{strings.Repeat("00", 32)}}, nil
 	case strings.Contains(query, "SELECT i.media_type"):
-		rows := &imageRows{columns: []string{"media_type"}}
+		rows := &imageRows{columns: []string{"media_type", "secret_key_hash", "visible"}}
 		f.visibilityChecks++
-		if f.active && (!f.revokeAfterFirstCheck || f.visibilityChecks == 1) {
-			rows.values = []driver.Value{"image/jpeg"}
-		}
+		visible := f.active && (!f.revokeAfterFirstCheck || f.visibilityChecks == 1)
+		rows.values = []driver.Value{"image/jpeg", strings.Repeat("00", 32), visible}
 		return rows, nil
 	case strings.Contains(query, "SELECT data"):
 		f.dataReads++
@@ -111,7 +108,7 @@ func TestImageHandlerAuthorizesCachedImages(t *testing.T) {
 		t.Fatalf("bad redirect: %d %v %q", first.Code, first.Header(), first.Body.String())
 	}
 	second := request(url(exp, sig))
-	if second.Code != 200 || f.dataReads != 0 || f.queries != 4 {
+	if second.Code != 200 || f.dataReads != 0 || f.queries != 2 {
 		t.Fatalf("cache hit did not reauthorize or reread bytes: status=%d, reads=%d, queries=%d", second.Code, f.dataReads, f.queries)
 	}
 	f.active = false
