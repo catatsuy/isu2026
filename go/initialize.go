@@ -37,6 +37,10 @@ func initializeHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 
+		if h.Config.Region == "asia" && os.Getenv("ISUREAL_WARM_IMAGE_URLS") == "1" {
+			warmImageURLs(ctx, h.WriteDB(), &signedImageURLs)
+		}
+
 		log.Printf("initialize total=%s", time.Since(started))
 		// Image bytes are immutable. DB authorization controls visibility after reset.
 
