@@ -106,9 +106,10 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		var window struct {
-			ID        string    `db:"id"`
-			LocalDate time.Time `db:"local_date"`
-			StartsAt  time.Time `db:"starts_at"`
+			ID             string    `db:"id"`
+			LocalDate      time.Time `db:"local_date"`
+			StartsAt       time.Time `db:"starts_at"`
+			OnTimeDeadline time.Time `db:"on_time_deadline"`
 		}
 		// Concurrent authors may share this lock; ending the window must wait
 		// for their commits. The user lock still serializes slot/count changes.
@@ -138,6 +139,9 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 		if counts.Active != 0 || counts.Deleted >= 2 || postedAt.Before(window.StartsAt) {
 			return NewAPIError(http.StatusConflict, "post_slot_unavailable")
 		}
+		// Match pgx timestamptz binary encoding (microsecond truncation) and
+		// its default scan location, so the response matches a DB round trip.
+		postedAt = postedAt.Truncate(time.Microsecond).In(time.Local)
 		if _, err := tx.ExecContext(ctx, `INSERT INTO image_objects (id, owner_user_id, data, media_type, created_at) VALUES ($1, $2, $3, 'image/jpeg', $4)`, imageID, userID, nil, postedAt); err != nil {
 			return err
 		}
@@ -150,9 +154,10 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			location.Kind, location.Latitude, location.Longitude, location.Locality, postedAt); err != nil {
 			return err
 		}
-		post, err := getPost(ctx, tx, postID)
-		if err != nil {
-			return err
+		post := Post{
+			ID: postID, AuthorID: userID, PostingWindowID: window.ID,
+			ImageID: imageID, Caption: input.Caption, Visibility: input.Visibility,
+			PostLocation: location, PostedAt: postedAt, OnTimeDeadline: window.OnTimeDeadline,
 		}
 		if err := tx.Commit(); err != nil {
 			return err
@@ -381,4 +386,4 @@ func deletePostHandler(h *HandlerContext) echo.HandlerFunc {
 	}
 }
 
-const activePostingWindowQuery = `SELECT id, local_date, starts_at FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE`
+const activePostingWindowQuery = `SELECT id, local_date, starts_at, on_time_deadline FROM posting_windows WHERE region = $1 AND ended_at IS NULL FOR SHARE`

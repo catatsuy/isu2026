@@ -45,10 +45,10 @@ func TestPostingWindowSharedLocksPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Exec(`DROP SCHEMA ` + schema + ` CASCADE`) })
-	if _, err := db.ExecContext(ctx, `CREATE TABLE `+schema+`.posting_windows (id text PRIMARY KEY, region text, local_date date, starts_at timestamptz, ended_at timestamptz)`); err != nil {
+	if _, err := db.ExecContext(ctx, `CREATE TABLE `+schema+`.posting_windows (id text PRIMARY KEY, region text, local_date date, starts_at timestamptz, on_time_deadline timestamptz, ended_at timestamptz)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.ExecContext(ctx, `INSERT INTO `+schema+`.posting_windows VALUES ('window','jp',CURRENT_DATE,now(),NULL)`); err != nil {
+	if _, err := db.ExecContext(ctx, `INSERT INTO `+schema+`.posting_windows VALUES ('window','jp',CURRENT_DATE,now(),now(),NULL)`); err != nil {
 		t.Fatal(err)
 	}
 	begin := func() *sqlx.Tx {
@@ -68,9 +68,10 @@ func TestPostingWindowSharedLocksPostgres(t *testing.T) {
 	one, two := begin(), begin()
 	lock := func(tx *sqlx.Tx) {
 		var window struct {
-			ID        string    `db:"id"`
-			LocalDate time.Time `db:"local_date"`
-			StartsAt  time.Time `db:"starts_at"`
+			ID             string    `db:"id"`
+			LocalDate      time.Time `db:"local_date"`
+			StartsAt       time.Time `db:"starts_at"`
+			OnTimeDeadline time.Time `db:"on_time_deadline"`
 		}
 		if err := tx.GetContext(ctx, &window, activePostingWindowQuery, "jp"); err != nil {
 			t.Fatal(err)
