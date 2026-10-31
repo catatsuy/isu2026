@@ -101,6 +101,16 @@ type viewerContext struct {
 }
 
 func loadViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID string) (viewerContext, error) {
+	viewer, err := loadViewerPostingContext(ctx, db, viewerID)
+	if err != nil {
+		return viewer, err
+	}
+	return loadViewerRelationships(ctx, db, viewer)
+}
+
+// loadViewerPostingContext loads only the information needed to determine
+// whether a feed can contain other users' posts.
+func loadViewerPostingContext(ctx context.Context, db sqlx.QueryerContext, viewerID string) (viewerContext, error) {
 	viewer := viewerContext{Friends: map[string]bool{}, FriendsOfFriends: map[string]bool{}, MutualFriends: map[string]int{}}
 	var err error
 	if viewer.User, err = getUser(ctx, db, viewerID); err != nil {
@@ -117,6 +127,11 @@ func loadViewerContext(ctx context.Context, db sqlx.QueryerContext, viewerID str
  `, viewer.ID, viewer.Region); err != nil {
 		return viewer, err
 	}
+	return viewer, nil
+}
+
+func loadViewerRelationships(ctx context.Context, db sqlx.QueryerContext, viewer viewerContext) (viewerContext, error) {
+	var err error
 	if viewer.Blocked, err = getBlockedUserIDs(ctx, db, viewer.ID); err != nil {
 		return viewer, err
 	}
