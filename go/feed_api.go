@@ -48,11 +48,17 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 			return NewAPIError(http.StatusBadRequest, "invalid_pagination")
 		}
 		ctx := c.Request().Context()
-		viewer, err := loadViewerContext(ctx, h.DB, GetSession(c).UserID)
+		viewer, err := loadViewerPostingContext(ctx, h.DB, GetSession(c).UserID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
 		}
 		if err != nil {
+			return err
+		}
+		if !viewer.HasPostedToday {
+			return c.JSON(http.StatusOK, getFeedResponse{Items: []feedItemResponse{}})
+		}
+		if viewer, err = loadViewerRelationships(ctx, h.DB, viewer); err != nil {
 			return err
 		}
 		candidates, err := selectFeedPosts(ctx, h.DB, viewer, input)
@@ -114,9 +120,13 @@ func recommendationScores(ctx context.Context, db sqlx.QueryerContext, viewer vi
 		return scores, nil
 	}
 	authorIDs := make([]string, 0, len(posts))
+	seenAuthors := make(map[string]bool, len(posts))
 	postIDs := make([]string, 0, len(posts))
 	for _, post := range posts {
-		authorIDs = append(authorIDs, post.AuthorID)
+		if !seenAuthors[post.AuthorID] {
+			authorIDs = append(authorIDs, post.AuthorID)
+			seenAuthors[post.AuthorID] = true
+		}
 		postIDs = append(postIDs, post.ID)
 	}
 
