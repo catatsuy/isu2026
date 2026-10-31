@@ -26,11 +26,17 @@ import (
 const maxImageFileSize = 32 << 20
 
 type ImageFileStore struct {
-	Root   string
-	Peers  []string
-	token  []byte
-	client *http.Client
-	fills  singleflight.Group
+	Root              string
+	Peers             []string
+	token             []byte
+	client            *http.Client
+	fills             singleflight.Group
+	replicationOnce   sync.Once
+	replicationCancel context.CancelFunc
+	replicationWG     sync.WaitGroup
+	wake              chan struct{}
+	replicationErr    error
+	replicationLocks  [256]sync.Mutex
 }
 
 func NewImageFileStore(config *Config) (*ImageFileStore, error) {
@@ -57,7 +63,11 @@ func NewImageFileStore(config *Config) (*ImageFileStore, error) {
 	if _, err := os.Stat(filepath.Join(config.ImageFileDir, ".export-complete")); err != nil {
 		return nil, errors.New("initial image file export is not complete")
 	}
-	return &ImageFileStore{Root: config.ImageFileDir, Peers: config.ImagePeers, token: token, client: &http.Client{Timeout: 15 * time.Second}}, nil
+	store := &ImageFileStore{Root: config.ImageFileDir, Peers: config.ImagePeers, token: token, client: &http.Client{Timeout: 15 * time.Second}}
+	if err := store.startReplication(); err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 func imageFileKey(id string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(id))) }
@@ -218,42 +228,36 @@ func (s *ImageFileStore) signature(method, id, timestamp, digest string) string 
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// At least one peer must acknowledge a durable copy before metadata is committed.
+// Save guarantees local durability and durable replication intent only. Remote
+// failures cannot fail a committed upload. ctx belongs to the request, not workers.
 func (s *ImageFileStore) Save(ctx context.Context, id string, data []byte) error {
 	if len(data) > maxImageFileSize {
 		return errors.New("image exceeds file limit")
 	}
-	if err := WriteImageFile(s.Root, id, data, true); err != nil {
-		return err
-	}
 	if len(s.Peers) == 0 {
 		return errors.New("no image replica peers configured")
 	}
-	results := make(chan bool, len(s.Peers))
-	for _, peer := range s.Peers {
-		go func(peer string) {
-			replicaCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
-			defer cancel()
-			response, err := s.peerRequest(replicaCtx, peer, http.MethodPut, id, data)
-			ok := err == nil
-			if response != nil {
-				ok = ok && response.StatusCode == http.StatusNoContent
-				response.Body.Close()
-			}
-			results <- ok
-		}(peer)
+	if err := s.startReplication(); err != nil {
+		return err
 	}
-	for range s.Peers {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case ok := <-results:
-			if ok {
-				return nil
-			}
-		}
+	if err := WriteImageFile(s.Root, id, data, true); err != nil {
+		return err
 	}
-	return errors.New("image replication failed: no durable peer copy")
+	// Persist the queue entry before success (and before callers commit DB metadata).
+	// A crash before this point may leave an unreferenced local image, but cannot
+	// lose replication work for an acknowledged Save.
+	lock := s.replicationJobLock(ImageFilePath(s.jobRoot(), id))
+	lock.Lock()
+	err := WriteImageFile(s.jobRoot(), id, []byte(id), true)
+	lock.Unlock()
+	if err != nil {
+		return err
+	}
+	select {
+	case s.wake <- struct{}{}:
+	default:
+	}
+	return nil
 }
 
 // Ensure reads local files or another file replica; it never reads DB image bytes.

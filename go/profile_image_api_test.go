@@ -58,10 +58,8 @@ func TestProfileImagePersistsBeforeTransaction(t *testing.T) {
 			db := sql.OpenDB(profileConnector{f})
 			defer db.Close()
 			files := &ImageFileStore{Root: t.TempDir(), token: bytes.Repeat([]byte("k"), 32), client: &http.Client{}}
-			// Replication must not consume a DB connection or hold any DB locks.
-			inUse := make(chan int, 1)
+			// Remote failures must not determine the API response.
 			peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				inUse <- db.Stats().InUse
 				if scenario == "replication failure" {
 					w.WriteHeader(http.StatusInternalServerError)
 				} else {
@@ -70,6 +68,7 @@ func TestProfileImagePersistsBeforeTransaction(t *testing.T) {
 			}))
 			defer peer.Close()
 			files.Peers = []string{peer.URL}
+			defer files.Close()
 			h := &HandlerContext{DB: sqlx.NewDb(db, "fixture"), ImageFiles: files}
 			e := echo.New()
 			e.HTTPErrorHandler = APIErrorHandler
@@ -85,17 +84,10 @@ func TestProfileImagePersistsBeforeTransaction(t *testing.T) {
 			req.Header.Set("Content-Type", "image/jpeg")
 			response := httptest.NewRecorder()
 			e.ServeHTTP(response, req)
-			if n := <-inUse; n != 0 {
-				t.Fatalf("replication held %d DB connections", n)
-			}
 			switch scenario {
-			case "success":
+			case "success", "replication failure":
 				if response.Code != 204 || f.begins != 1 || f.commits != 1 {
 					t.Fatalf("status=%d fixture=%+v", response.Code, f)
-				}
-			case "replication failure":
-				if response.Code != 500 || f.begins != 0 {
-					t.Fatalf("unreplicated image reached DB: status=%d fixture=%+v", response.Code, f)
 				}
 			case "insert failure":
 				if response.Code != 500 || f.commits != 0 || f.rollbacks != 1 {

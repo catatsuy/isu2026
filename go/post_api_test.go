@@ -124,6 +124,7 @@ func TestCreatePost(t *testing.T) {
 			peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) }))
 			defer peer.Close()
 			h := &HandlerContext{DB: sqlx.NewDb(db, "fixture"), ImageFiles: &ImageFileStore{Root: t.TempDir(), Peers: []string{peer.URL}, client: peer.Client()}}
+			defer h.ImageFiles.Close()
 			var body bytes.Buffer
 			mw := multipart.NewWriter(&body)
 			part, err := mw.CreateFormFile("image", "post.jpg")
