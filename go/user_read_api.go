@@ -24,6 +24,16 @@ type searchUsersResponse struct {
 }
 
 func normalizeSearchText(value string) string {
+	ascii := true
+	for i := 0; i < len(value); i++ {
+		if value[i] >= 128 {
+			ascii = false
+			break
+		}
+	}
+	if ascii {
+		return strings.ToLower(value)
+	}
 	return norm.NFC.String(cases.Fold().String(norm.NFC.String(value)))
 }
 
@@ -57,10 +67,10 @@ func searchUsersHandler(h *HandlerContext) echo.HandlerFunc {
 				return err
 			}
 			for _, user := range users {
-				if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
+				if blocked[user.ID] {
 					continue
 				}
-				if blocked[user.ID] {
+				if !strings.Contains(normalizeSearchText(user.Username), query) && !strings.Contains(normalizeSearchText(user.DisplayName), query) {
 					continue
 				}
 				if err := user.setImageKey(); err != nil {

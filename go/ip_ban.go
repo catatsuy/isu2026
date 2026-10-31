@@ -32,7 +32,12 @@ func (l *IPBanList) Banned(ctx context.Context, db *sqlx.DB, ip string) (bool, e
 	snapshot := l.snapshot.Load()
 	if (snapshot == nil || time.Since(snapshot.loadedAt) >= ipBanReloadInterval) && l.reloading.TryLock() {
 		defer l.reloading.Unlock()
-		loaded, err := loadIPBans(ctx, db)
+		snapshot = l.snapshot.Load()
+		if snapshot != nil && time.Since(snapshot.loadedAt) < ipBanReloadInterval {
+			until, ok := snapshot.bans[ip]
+			return ok && time.Now().Before(until), nil
+		}
+		loaded, err := loadIPBans(ctx, db, snapshot)
 		if err != nil {
 			return false, err
 		}
@@ -46,16 +51,33 @@ func (l *IPBanList) Banned(ctx context.Context, db *sqlx.DB, ip string) (bool, e
 	return ok && time.Now().Before(until), nil
 }
 
-func loadIPBans(ctx context.Context, db *sqlx.DB) (*ipBanSnapshot, error) {
+func loadIPBans(ctx context.Context, db *sqlx.DB, previous *ipBanSnapshot) (*ipBanSnapshot, error) {
 	var rows []ipBan
 	if err := db.SelectContext(ctx, &rows, `SELECT ip, banned_until FROM ip_bans WHERE banned_until > clock_timestamp()`); err != nil {
 		return nil, err
+	}
+	return &ipBanSnapshot{loadedAt: time.Now(), bans: ipBanMap(rows, previous)}, nil
+}
+
+// Published maps are immutable: share an unchanged map, never clear or mutate it.
+func ipBanMap(rows []ipBan, previous *ipBanSnapshot) map[string]time.Time {
+	if previous != nil && len(rows) == len(previous.bans) {
+		same := true
+		for _, row := range rows {
+			if until, ok := previous.bans[row.IP]; !ok || !until.Equal(row.BannedUntil) {
+				same = false
+				break
+			}
+		}
+		if same {
+			return previous.bans
+		}
 	}
 	bans := make(map[string]time.Time, len(rows))
 	for _, row := range rows {
 		bans[row.IP] = row.BannedUntil
 	}
-	return &ipBanSnapshot{loadedAt: time.Now(), bans: bans}, nil
+	return bans
 }
 
 func extractClientIP(req *http.Request) string {

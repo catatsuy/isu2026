@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"image/jpeg"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -72,7 +71,7 @@ func createPostHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer imageFile.Close()
-		imageData, err := io.ReadAll(imageFile)
+		imageData, err := readImagePart(imageFile, input.Image)
 		if err != nil {
 			return err
 		}

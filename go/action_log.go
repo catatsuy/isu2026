@@ -58,6 +58,7 @@ var logLevelRanks = map[string]int{"debug": 0, "info": 1, "error": 2}
 func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
+			c.Set("action_log", true)
 			err := next(c)
 			if err != nil {
 				c.Echo().HTTPErrorHandler(c, err)
@@ -99,6 +100,9 @@ func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc 
 			abuse, _ := c.Get("abuse").(string)
 			if abuse != "" {
 				entry["abuse"] = abuse
+			}
+			if status >= http.StatusInternalServerError && err != nil {
+				entry["error"] = err.Error()
 			}
 			line, marshalErr := json.Marshal(entry)
 			if marshalErr != nil {

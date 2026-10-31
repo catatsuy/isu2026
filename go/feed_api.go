@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -78,28 +77,24 @@ func getFeedHandler(h *HandlerContext) echo.HandlerFunc {
 func makeFeedResponse(candidates []PostWithAuthor, scores map[string]int64, input getFeedRequest) getFeedResponse {
 	ranked := input.Feed == "friends-of-friends"
 	if ranked {
-		sort.SliceStable(candidates, func(i, j int) bool {
-			return scores[candidates[i].ID] > scores[candidates[j].ID]
-		})
+		candidates = topRankedPosts(candidates, scores, input)
 	}
-	items := make([]feedItemResponse, 0)
+	items := make([]feedItemResponse, 0, min(len(candidates), 50))
+	hasMore := false
 	for _, post := range candidates {
 		score := scores[post.ID]
 		if ranked && input.BeforeScore != nil && !rankedBefore(score, post.Post, *input.BeforeScore, *input.BeforePostedAt, input.BeforeID) {
 			continue
+		}
+		if len(items) == 50 {
+			hasMore = true
+			break
 		}
 		item := feedItemResponse{createPostResponse: newPostResponse(post.Post, post.Author)}
 		if ranked {
 			item.Score = &score
 		}
 		items = append(items, item)
-		if len(items) == 51 {
-			break
-		}
-	}
-	hasMore := len(items) > 50
-	if hasMore {
-		items = items[:50]
 	}
 	return getFeedResponse{Items: items, HasMore: hasMore}
 }
@@ -166,15 +161,14 @@ func recommendationScores(ctx context.Context, db sqlx.QueryerContext, viewer vi
 	if err := sqlx.SelectContext(ctx, db, &engagements, sqlx.Rebind(sqlx.DOLLAR, query), args...); err != nil {
 		return nil, err
 	}
-	friendEngagements := map[string]int64{}
 	for _, engagement := range engagements {
 		if viewer.Friends[engagement.UserID] {
-			friendEngagements[engagement.PostID]++
+			scores[engagement.PostID] += 10
 		}
 	}
 
 	for _, post := range posts {
-		scores[post.ID] = 10*friendEngagements[post.ID] + 3*int64(viewer.MutualFriends[post.AuthorID]) + min(connections[post.AuthorID], 30)
+		scores[post.ID] += 3*int64(viewer.MutualFriends[post.AuthorID]) + min(connections[post.AuthorID], 30)
 	}
 	return scores, nil
 }

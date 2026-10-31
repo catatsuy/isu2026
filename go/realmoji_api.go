@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"image/jpeg"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -51,7 +50,7 @@ func replaceRealMojiHandler(h *HandlerContext) echo.HandlerFunc {
 			return err
 		}
 		defer file.Close()
-		data, err := io.ReadAll(file)
+		data, err := readImagePart(file, input.Image)
 		if err != nil {
 			return err
 		}
