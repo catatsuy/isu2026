@@ -1,10 +1,10 @@
 package isureal
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 
+	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v5"
 )
 
