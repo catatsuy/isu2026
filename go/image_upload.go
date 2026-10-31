@@ -3,8 +3,10 @@ package isureal
 import (
 	"bytes"
 	"image/jpeg"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
@@ -72,6 +74,10 @@ func (u primaryImageUpload) validate() error {
 }
 
 func (h *HandlerContext) commitImageUpload(c *echo.Context, u primaryImageUpload) (primaryImageUploadResult, error) {
+	started := time.Now()
+	defer func() {
+		log.Printf("image_upload phase=db kind=%s image_id=%s duration_us=%d", u.Kind, u.ImageID, time.Since(started).Microseconds())
+	}()
 	result := primaryImageUploadResult{Status: http.StatusCreated}
 	var value any
 	var err error
@@ -94,6 +100,10 @@ func (h *HandlerContext) commitImageUpload(c *echo.Context, u primaryImageUpload
 }
 
 func (h *HandlerContext) finishImageUpload(c *echo.Context, u primaryImageUpload) error {
+	started := time.Now()
+	defer func() {
+		log.Printf("image_upload phase=metadata kind=%s image_id=%s duration_us=%d", u.Kind, u.ImageID, time.Since(started).Microseconds())
+	}()
 	var result primaryImageUploadResult
 	var err error
 	if h.PrimaryAPI != nil {
@@ -151,7 +161,9 @@ func trustedUploadRPC(c *echo.Context) bool {
 }
 
 func decodeUploadJPEG(c *echo.Context, data []byte, limit int, code string) error {
+	started := time.Now()
 	img, err := jpeg.Decode(bytes.NewReader(data))
+	log.Printf("image_upload phase=jpeg route=%s bytes=%d duration_us=%d", c.Path(), len(data), time.Since(started).Microseconds())
 	if err != nil {
 		if code == "invalid_profile_image" {
 			c.Set("abuse", "invalid_image")

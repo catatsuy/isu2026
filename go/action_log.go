@@ -56,9 +56,6 @@ var actionNames = map[string]string{
 var logLevelRanks = map[string]int{"debug": 0, "info": 1, "error": 2}
 
 func ActionLogMiddleware(minLevel string, output io.Writer) echo.MiddlewareFunc {
-	if minLevel == "off" {
-		return func(next echo.HandlerFunc) echo.HandlerFunc { return next }
-	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
 			if c.Path() == primaryRPCPath {
