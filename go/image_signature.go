@@ -19,7 +19,7 @@ import (
 const imageURLLifetime = 24 * time.Hour
 const imageSignatureIterations = 1000
 
-const imageURLCacheLimit = 32768
+const imageURLCacheLimit = 65536
 
 type imageURLCacheKey struct {
 	key, imageID string
