@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,53 +66,127 @@ func ImageFilePath(root, id string) string {
 	return filepath.Join(root, key[:2], key)
 }
 
+// imageDirectorySync serializes the first parent sync, including callers that
+// observe a directory created by an in-flight writer. Roots are initialized by
+// the exporter and must not be removed or replaced while the service is running.
+var imageDirectorySync = struct {
+	sync.Mutex
+	ready map[string]bool
+}{ready: make(map[string]bool)}
+
+func syncImageFile(f *os.File) error { return f.Sync() }
+
+func prepareImageDirectory(dir string, durable bool, syncFile func(*os.File) error) error {
+	if !durable {
+		return os.MkdirAll(dir, 0755)
+	}
+	imageDirectorySync.Lock()
+	defer imageDirectorySync.Unlock()
+	if imageDirectorySync.ready[dir] {
+		return nil
+	}
+	// The root must already exist durably (the initial export establishes it).
+	if err := os.Mkdir(dir, 0755); err != nil && !os.IsExist(err) {
+		return err
+	}
+	parent, err := os.Open(filepath.Dir(dir))
+	if err != nil {
+		return err
+	}
+	defer parent.Close()
+	// Even EEXIST may mean another process just created this directory. Never
+	// infer durability from existence, and never cache a failed sync.
+	if err := syncFile(parent); err != nil {
+		return err
+	}
+	imageDirectorySync.ready[dir] = true
+	return nil
+}
+
 // WriteImageFile never replaces different bytes for an existing image ID.
 // Exporters may batch fsync; application uploads must use durable=true.
 func WriteImageFile(root, id string, data []byte, durable bool) error {
-	name := ImageFilePath(root, id)
+	return writeImageFile(root, id, data, durable, syncImageFile, (*os.File).Write)
+}
+
+// The two operation arguments allow deterministic durability and write failures
+// in tests without replacing process-global filesystem functions.
+func writeImageFile(root, id string, data []byte, durable bool, syncFile func(*os.File) error, write func(*os.File, []byte) (int, error)) error {
+	name, err := filepath.Abs(ImageFilePath(root, id))
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(name)
+	if err := prepareImageDirectory(dir, durable, syncFile); err != nil {
+		return err
+	}
 	if existing, err := os.ReadFile(name); err == nil {
 		if !bytes.Equal(existing, data) {
 			return errors.New("immutable image content mismatch")
 		}
-		return nil
+		if !durable {
+			return nil
+		}
+		// A previous writer may have published but not completed its syncs, or
+		// returned a sync error. A retry must establish durability itself.
+		f, err := os.Open(name)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		if err := syncFile(f); err != nil {
+			return err
+		}
 	} else if !os.IsNotExist(err) {
 		return err
-	}
-	dir := filepath.Dir(name)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(dir, ".image-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	defer f.Close()
-	if _, err = f.Write(data); err != nil {
-		return err
-	}
-	if err = f.Chmod(0644); err != nil {
-		return err
-	}
-	if durable {
-		if err = f.Sync(); err != nil {
+	} else {
+		f, err := os.CreateTemp(dir, ".image-*")
+		if err != nil {
 			return err
 		}
-	}
-	if err = f.Close(); err != nil {
-		return err
-	}
-	// link publishes atomically without overwriting an existing immutable object.
-	if err = os.Link(f.Name(), name); err != nil {
-		if !os.IsExist(err) {
+		defer os.Remove(f.Name())
+		defer f.Close()
+		n, err := write(f, data)
+		if err != nil {
 			return err
 		}
-		existing, readErr := os.ReadFile(name)
-		if readErr != nil {
-			return readErr
+		if n != len(data) {
+			return io.ErrShortWrite
 		}
-		if !bytes.Equal(existing, data) {
-			return errors.New("concurrent immutable image content mismatch")
+		if err := f.Chmod(0644); err != nil {
+			return err
+		}
+		if durable {
+			if err := syncFile(f); err != nil {
+				return err
+			}
+		}
+		if err := f.Close(); err != nil {
+			return err
+		}
+		// link publishes atomically without overwriting an existing immutable object.
+		if err := os.Link(f.Name(), name); err != nil {
+			if !os.IsExist(err) {
+				return err
+			}
+			existing, err := os.ReadFile(name)
+			if err != nil {
+				return err
+			}
+			if !bytes.Equal(existing, data) {
+				return errors.New("concurrent immutable image content mismatch")
+			}
+			// Our synced inode may differ from the winner's inode.
+			if durable {
+				winner, err := os.Open(name)
+				if err != nil {
+					return err
+				}
+				defer winner.Close()
+				if err := syncFile(winner); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	if durable {
@@ -120,15 +195,7 @@ func WriteImageFile(root, id string, data []byte, durable bool) error {
 			return err
 		}
 		defer d.Close()
-		if err = d.Sync(); err != nil {
-			return err
-		}
-		parent, err := os.Open(root)
-		if err != nil {
-			return err
-		}
-		defer parent.Close()
-		return parent.Sync()
+		return syncFile(d)
 	}
 	return nil
 }
